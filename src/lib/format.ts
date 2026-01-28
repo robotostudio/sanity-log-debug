@@ -11,7 +11,7 @@ export function formatBytes(bytes: number): string {
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
+  return `${(bytes / k ** i).toFixed(1)} ${sizes[i]}`;
 }
 
 export function formatNumber(n: number): string {
@@ -48,11 +48,11 @@ export function getStatusGroup(status: number): string {
 
 export function truncateUrl(url: string, maxLength: number = 60): string {
   if (url.length <= maxLength) return url;
-  return url.slice(0, maxLength - 3) + "...";
+  return `${url.slice(0, maxLength - 3)}...`;
 }
 
 export function truncateMiddle(str: string, maxLength: number = 40): string {
   if (str.length <= maxLength) return str;
   const half = Math.floor((maxLength - 3) / 2);
-  return str.slice(0, half) + "..." + str.slice(-half);
+  return `${str.slice(0, half)}...${str.slice(-half)}`;
 }

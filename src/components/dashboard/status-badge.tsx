@@ -27,7 +27,10 @@ export function SeverityBadge({
     ERROR: "border-red-500/50 text-red-400 bg-red-500/10",
   };
   return (
-    <Badge variant="outline" className={`font-mono text-xs ${colors[severity]}`}>
+    <Badge
+      variant="outline"
+      className={`font-mono text-xs ${colors[severity]}`}
+    >
       {severity}
     </Badge>
   );

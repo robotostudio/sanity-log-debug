@@ -1,16 +1,16 @@
 "use client";
 
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,7 +34,8 @@ function BarTooltip({
       </p>
       {d.avgDuration !== undefined && (
         <p className="text-zinc-400">
-          Avg: <span className="text-zinc-100">{d.avgDuration.toFixed(1)}ms</span>
+          Avg:{" "}
+          <span className="text-zinc-100">{d.avgDuration.toFixed(1)}ms</span>
         </p>
       )}
     </div>
@@ -50,9 +51,7 @@ export function StatusDistribution({
     return (
       <Card className="border-zinc-800 bg-zinc-900/50">
         <CardHeader>
-          <CardTitle className="text-sm text-zinc-400">
-            Status Codes
-          </CardTitle>
+          <CardTitle className="text-sm text-zinc-400">Status Codes</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[300px] w-full" />
@@ -240,9 +239,9 @@ export function DonutChart({
               label={renderCustomLabel}
               isAnimationActive={false}
             >
-              {data.map((_, i) => (
+              {data.map((entry, i) => (
                 <Cell
-                  key={`cell-${i}`}
+                  key={entry.name}
                   fill={CHART_COLORS[i % CHART_COLORS.length]}
                   fillOpacity={0.8}
                 />

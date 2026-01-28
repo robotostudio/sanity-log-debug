@@ -1,23 +1,32 @@
 "use client";
 
+import { format, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { formatDuration, formatBytes } from "@/lib/constants";
+import { formatBytes, formatDuration } from "@/lib/constants";
 import type { LogRecord } from "@/lib/types";
-import { format, parseISO } from "date-fns";
-import { StatusBadge, SeverityBadge } from "./status-badge";
+import { SeverityBadge, StatusBadge } from "./status-badge";
+
+function normalizeGroq(query: string): string {
+  return query
+    .split("\n")
+    .map((line) => line.trimStart())
+    .filter((line, i, arr) => !(line === "" && i > 0 && arr[i - 1] === ""))
+    .join("\n")
+    .trim();
+}
 
 function parseGroqQuery(url: string): string | null {
   try {
     const urlObj = new URL(url);
     const query = urlObj.searchParams.get("query");
-    if (query) return query;
+    if (query) return normalizeGroq(query);
   } catch {
     const match = url.match(/[?&]query=([^&]*)/);
     if (match) {
@@ -118,7 +127,9 @@ export function LogDetailSheet({
             <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
               Duration
             </span>
-            <div className={`mt-0.5 font-mono text-3xl font-bold tracking-tight ${durationColor}`}>
+            <div
+              className={`mt-0.5 font-mono text-3xl font-bold tracking-tight ${durationColor}`}
+            >
               {formatDuration(record.body.duration)}
             </div>
           </div>
@@ -186,12 +197,22 @@ export function LogDetailSheet({
 
           {/* Tracing */}
           <div className="grid grid-cols-1 gap-y-3">
-            <Field label="Trace ID" value={
-              <span className="text-[11px] text-zinc-400">{record.traceId}</span>
-            } />
-            <Field label="Span ID" value={
-              <span className="text-[11px] text-zinc-400">{record.spanId}</span>
-            } />
+            <Field
+              label="Trace ID"
+              value={
+                <span className="text-[11px] text-zinc-400">
+                  {record.traceId}
+                </span>
+              }
+            />
+            <Field
+              label="Span ID"
+              value={
+                <span className="text-[11px] text-zinc-400">
+                  {record.spanId}
+                </span>
+              }
+            />
           </div>
 
           <Separator className="bg-zinc-800/60" />
@@ -206,10 +227,7 @@ export function LogDetailSheet({
                 label="Project ID"
                 value={record.attributes.sanity.projectId}
               />
-              <Field
-                label="Dataset"
-                value={record.attributes.sanity.dataset}
-              />
+              <Field label="Dataset" value={record.attributes.sanity.dataset} />
               <Field label="Domain" value={record.attributes.sanity.domain} />
               <Field
                 label="Endpoint"

@@ -1,20 +1,20 @@
 "use client";
 
+import { format, parseISO } from "date-fns";
 import {
-  AreaChart,
   Area,
+  AreaChart,
+  Brush,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Brush,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import type { TimeSeriesBucket } from "@/lib/types";
-import { format, parseISO } from "date-fns";
 
 function CustomTooltip({
   active,
@@ -47,11 +47,7 @@ function CustomTooltip({
   );
 }
 
-export function TimeSeriesChart({
-  data,
-}: {
-  data: TimeSeriesBucket[] | null;
-}) {
+export function TimeSeriesChart({ data }: { data: TimeSeriesBucket[] | null }) {
   if (!data) {
     return (
       <Card className="border-zinc-800 bg-zinc-900/50">

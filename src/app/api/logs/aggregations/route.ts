@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import {
-  loadRecords,
-  getFilteredRecords,
   getAggregations,
+  getFilteredRecords,
+  loadRecords,
   parseFiltersFromParams,
 } from "@/lib/data";
 

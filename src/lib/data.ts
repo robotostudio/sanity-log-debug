@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { LATENCY_BUCKETS } from "./constants";
 import type {
   Aggregations,
   DistributionItem,
@@ -8,7 +9,6 @@ import type {
   LogRecord,
   TimeSeriesBucket,
 } from "./types";
-import { LATENCY_BUCKETS } from "./constants";
 
 let cachedRecords: LogRecord[] | null = null;
 
@@ -187,9 +187,7 @@ export function getAggregations(records: LogRecord[]): Aggregations {
     const key = String(r.body.status);
     statusMap.set(key, (statusMap.get(key) ?? 0) + 1);
   }
-  const statusDistribution: DistributionItem[] = Array.from(
-    statusMap.entries(),
-  )
+  const statusDistribution: DistributionItem[] = Array.from(statusMap.entries())
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
@@ -220,9 +218,7 @@ export function getAggregations(records: LogRecord[]): Aggregations {
     const key = r.attributes.sanity.domain;
     domainMap.set(key, (domainMap.get(key) ?? 0) + 1);
   }
-  const domainDistribution: DistributionItem[] = Array.from(
-    domainMap.entries(),
-  )
+  const domainDistribution: DistributionItem[] = Array.from(domainMap.entries())
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
@@ -231,9 +227,7 @@ export function getAggregations(records: LogRecord[]): Aggregations {
     const key = r.body.method;
     methodMap.set(key, (methodMap.get(key) ?? 0) + 1);
   }
-  const methodDistribution: DistributionItem[] = Array.from(
-    methodMap.entries(),
-  )
+  const methodDistribution: DistributionItem[] = Array.from(methodMap.entries())
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 

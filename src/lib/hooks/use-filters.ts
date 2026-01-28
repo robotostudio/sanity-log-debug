@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  useQueryStates,
-  parseAsString,
   parseAsArrayOf,
+  parseAsString,
   parseAsStringLiteral,
+  useQueryStates,
 } from "nuqs";
 import { useCallback, useMemo } from "react";
 

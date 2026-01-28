@@ -1,20 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { useFilters } from "@/lib/hooks/use-filters";
-import type { Aggregations } from "@/lib/types";
-import { FilterBar } from "./filter-bar";
-import { KpiCards } from "./kpi-cards";
-import { TimeSeriesChart } from "./time-series-chart";
-import {
-  StatusDistribution,
-  EndpointDistribution,
-  DonutChart,
-} from "./distribution-charts";
-import { LatencyHistogram } from "./latency-histogram";
-import { QueryExplorer } from "./query-explorer";
-import { LogsTable } from "./logs-table";
-import { formatDuration } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -24,7 +10,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDuration } from "@/lib/constants";
+import { useFilters } from "@/lib/hooks/use-filters";
+import type { Aggregations } from "@/lib/types";
+import {
+  DonutChart,
+  EndpointDistribution,
+  StatusDistribution,
+} from "./distribution-charts";
+import { FilterBar } from "./filter-bar";
+import { KpiCards } from "./kpi-cards";
+import { LatencyHistogram } from "./latency-histogram";
+import { LogsTable } from "./logs-table";
+import { QueryExplorer } from "./query-explorer";
 import { StatusBadge } from "./status-badge";
+import { TimeSeriesChart } from "./time-series-chart";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -35,7 +35,7 @@ export function DashboardShell() {
     ? `/api/logs/aggregations?${queryString}`
     : "/api/logs/aggregations";
 
-  const { data: agg, isLoading } = useSWR<Aggregations>(aggUrl, fetcher, {
+  const { data: agg } = useSWR<Aggregations>(aggUrl, fetcher, {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
@@ -76,7 +76,10 @@ export function DashboardShell() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <EndpointDistribution data={agg?.endpointDistribution ?? null} />
-          <DonutChart data={agg?.domainDistribution ?? null} title="By Domain" />
+          <DonutChart
+            data={agg?.domainDistribution ?? null}
+            title="By Domain"
+          />
           <DonutChart
             data={agg?.methodDistribution ?? null}
             title="By Method"

@@ -1,7 +1,11 @@
 "use client";
 
+import { format, parseISO } from "date-fns";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -10,14 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { formatDuration, formatBytes } from "@/lib/constants";
+import { formatBytes, formatDuration } from "@/lib/constants";
 import type { LogRecord } from "@/lib/types";
-import { StatusBadge, SeverityBadge } from "./status-badge";
 import { LogDetailSheet } from "./log-detail-sheet";
-import { format, parseISO } from "date-fns";
+import { SeverityBadge, StatusBadge } from "./status-badge";
 
 interface LogsResponse {
   data: LogRecord[];
@@ -46,6 +46,7 @@ export function LogsTable({ queryString }: { queryString: string }) {
   const [selectedRecord, setSelectedRecord] = useState<LogRecord | null>(null);
 
   // Reset page when filters change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: queryString is a prop that triggers page reset
   useEffect(() => {
     setPage(1);
   }, [queryString]);
@@ -110,8 +111,8 @@ export function LogsTable({ queryString }: { queryString: string }) {
       <CardContent>
         {isLoading && !data ? (
           <div className="space-y-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
+            {Array.from({ length: 10 }, (_, i) => `skel-${i}`).map((id) => (
+              <Skeleton key={id} className="h-8 w-full" />
             ))}
           </div>
         ) : (
@@ -149,10 +150,7 @@ export function LogsTable({ queryString }: { queryString: string }) {
                         onClick={() => setSelectedRecord(record)}
                       >
                         <TableCell className="font-mono text-xs text-zinc-400">
-                          {format(
-                            parseISO(record.timestamp),
-                            "MM/dd HH:mm:ss",
-                          )}
+                          {format(parseISO(record.timestamp), "MM/dd HH:mm:ss")}
                         </TableCell>
                         <TableCell className="font-mono text-xs text-zinc-300">
                           {record.body.method}

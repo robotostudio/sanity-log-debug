@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,9 +71,9 @@ export function LatencyHistogram({
               }}
             />
             <Bar dataKey="count" isAnimationActive={false}>
-              {data.map((_, i) => (
+              {data.map((entry, i) => (
                 <Cell
-                  key={`cell-${i}`}
+                  key={entry.name}
                   fill={LATENCY_BUCKETS[i]?.color ?? "#6b7280"}
                   fillOpacity={0.8}
                 />

@@ -1,17 +1,21 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useFilters } from "@/lib/hooks/use-filters";
-import { useState, useEffect, useRef } from "react";
 
 const SEVERITY_OPTIONS = ["INFO", "WARN", "ERROR"];
 const METHOD_OPTIONS = ["GET", "POST", "OPTIONS", "HEAD", "PUT"];
@@ -83,25 +87,41 @@ function MultiSelectFilter({
         align="start"
       >
         <div className="max-h-64 space-y-1.5 overflow-y-auto">
-          {options.map((opt) => (
-            <label
-              key={opt}
-              className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
-            >
-              <Checkbox
-                checked={selected.includes(opt)}
-                onCheckedChange={(checked) => {
+          {options.map((opt) => {
+            const checked = selected.includes(opt);
+            return (
+              <div
+                key={opt}
+                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                onClick={() => {
                   if (checked) {
-                    onChange([...selected, opt]);
-                  } else {
                     onChange(selected.filter((s) => s !== opt));
+                  } else {
+                    onChange([...selected, opt]);
                   }
                 }}
-                className="h-3.5 w-3.5"
-              />
-              <span className="font-mono">{opt}</span>
-            </label>
-          ))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (checked) {
+                      onChange(selected.filter((s) => s !== opt));
+                    } else {
+                      onChange([...selected, opt]);
+                    }
+                  }
+                }}
+                tabIndex={0}
+                role="option"
+                aria-selected={checked}
+              >
+                <Checkbox
+                  checked={checked}
+                  className="h-3.5 w-3.5 pointer-events-none"
+                />
+                <span className="font-mono">{opt}</span>
+              </div>
+            );
+          })}
         </div>
         {selected.length > 0 && (
           <Button
@@ -141,6 +161,43 @@ export function FilterBar() {
     }, 300);
   };
 
+  const dateRange: DateRange | undefined =
+    filters.dateFrom || filters.dateTo
+      ? {
+          from: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
+          to: filters.dateTo ? new Date(filters.dateTo) : undefined,
+        }
+      : undefined;
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setFilters({
+      dateFrom: range?.from
+        ? new Date(
+            range.from.getFullYear(),
+            range.from.getMonth(),
+            range.from.getDate(),
+          ).toISOString()
+        : "",
+      dateTo: range?.to
+        ? new Date(
+            range.to.getFullYear(),
+            range.to.getMonth(),
+            range.to.getDate(),
+            23,
+            59,
+            59,
+            999,
+          ).toISOString()
+        : "",
+    });
+  };
+
+  const dateLabel = dateRange?.from
+    ? dateRange.to
+      ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
+      : format(dateRange.from, "MMM d")
+    : "Date range";
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Input
@@ -149,6 +206,45 @@ export function FilterBar() {
         onChange={(e) => handleSearchChange(e.target.value)}
         className="h-8 w-64 border-zinc-700 bg-zinc-900 text-xs text-zinc-300 placeholder:text-zinc-600"
       />
+
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`h-8 border-zinc-700 bg-zinc-900 text-xs hover:bg-zinc-800 hover:text-zinc-100 ${
+              dateRange?.from ? "text-zinc-100" : "text-zinc-500"
+            }`}
+          >
+            <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+            {dateLabel}
+            {dateRange?.from && (
+              <button
+                type="button"
+                className="ml-1.5 rounded-sm px-0.5 text-zinc-500 hover:text-zinc-300"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilters({ dateFrom: "", dateTo: "" });
+                }}
+              >
+                &times;
+              </button>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-auto border-zinc-700 bg-zinc-900 p-0"
+          align="start"
+        >
+          <Calendar
+            mode="range"
+            selected={dateRange}
+            onSelect={handleDateRangeSelect}
+            numberOfMonths={2}
+            defaultMonth={new Date(2026, 0)}
+          />
+        </PopoverContent>
+      </Popover>
 
       <MultiSelectFilter
         label="Severity"
