@@ -1,14 +1,68 @@
 "use client";
 
 import {
+  endOfDay,
+  format,
+  isEqual,
+  parseISO,
+  startOfDay,
+  subDays,
+} from "date-fns";
+import {
   parseAsArrayOf,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
 } from "nuqs";
 import { useCallback, useMemo } from "react";
+import type { DatePreset } from "@/components/dashboard/filters/date-presets";
 
 const studioOptions = ["true", "false", "all"] as const;
+
+const DATE_FORMAT = "yyyy-MM-dd";
+
+function getPresetDateRange(
+  preset: DatePreset,
+): { from: Date; to: Date } | null {
+  if (!preset || preset === "custom") return null;
+
+  const now = new Date();
+  const to = endOfDay(now);
+
+  switch (preset) {
+    case "24h":
+      return { from: subDays(startOfDay(now), 1), to };
+    case "7d":
+      return { from: subDays(startOfDay(now), 7), to };
+    case "30d":
+      return { from: subDays(startOfDay(now), 30), to };
+    default:
+      return null;
+  }
+}
+
+function detectActivePreset(dateFrom: string, dateTo: string): DatePreset {
+  if (!dateFrom && !dateTo) return null;
+
+  const now = new Date();
+  const today = format(endOfDay(now), DATE_FORMAT);
+
+  // Check if dateTo is today
+  if (dateTo !== today) return "custom";
+
+  const fromDate = parseISO(dateFrom);
+
+  // Check each preset
+  const presets: DatePreset[] = ["24h", "7d", "30d"];
+  for (const preset of presets) {
+    const range = getPresetDateRange(preset);
+    if (range && isEqual(startOfDay(fromDate), startOfDay(range.from))) {
+      return preset;
+    }
+  }
+
+  return "custom";
+}
 
 export function useFilters() {
   const [filters, setFilters] = useQueryStates(
@@ -79,5 +133,37 @@ export function useFilters() {
     return params.toString();
   }, [filters]);
 
-  return { filters, setFilters, clearAll, activeCount, queryString };
+  const activePreset = useMemo(
+    () => detectActivePreset(filters.dateFrom, filters.dateTo),
+    [filters.dateFrom, filters.dateTo],
+  );
+
+  const applyDatePreset = useCallback(
+    (preset: DatePreset) => {
+      if (!preset || preset === "custom") {
+        // Clear date filters when preset is null or custom
+        setFilters({ dateFrom: "", dateTo: "" });
+        return;
+      }
+
+      const range = getPresetDateRange(preset);
+      if (range) {
+        setFilters({
+          dateFrom: format(range.from, DATE_FORMAT),
+          dateTo: format(range.to, DATE_FORMAT),
+        });
+      }
+    },
+    [setFilters],
+  );
+
+  return {
+    filters,
+    setFilters,
+    clearAll,
+    activeCount,
+    queryString,
+    activePreset,
+    applyDatePreset,
+  };
 }

@@ -189,8 +189,8 @@ export function LogDetailSheet({
               label="Response Size"
               value={formatBytes(record.body.responseSize)}
             />
-            <Field label="Remote IP" value={record.body.remoteIp} />
-            <Field label="Method" value={record.body.method} />
+            <Field label="Remote IP" value={record.body.remoteIp || "—"} />
+            <Field label="Method" value={record.body.method || "—"} />
           </div>
 
           <Separator className="bg-zinc-800/60" />
@@ -260,7 +260,7 @@ export function LogDetailSheet({
                   />
                 </div>
               )}
-              {record.attributes.sanity.tags.length > 0 && (
+              {record.attributes.sanity.tags?.length > 0 && (
                 <div className="col-span-2 space-y-1">
                   <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
                     Tags

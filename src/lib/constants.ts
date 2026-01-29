@@ -89,13 +89,15 @@ export function getStatusColor(status: number): string {
   return STATUS_COLORS[cat] ?? "#6b7280";
 }
 
-export function formatDuration(ms: number): string {
+export function formatDuration(ms: number | undefined | null): string {
+  if (ms == null || Number.isNaN(ms)) return "—";
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
   if (ms < 1000) return `${ms.toFixed(1)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
-export function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number | undefined | null): string {
+  if (bytes == null || Number.isNaN(bytes)) return "—";
   if (bytes < 1024) return `${bytes}B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
