@@ -7,6 +7,7 @@ export const env = createEnv({
     R2_ACCESS_KEY_ID: z.string().min(1, "R2_ACCESS_KEY_ID is required"),
     R2_SECRET_ACCESS_KEY: z.string().min(1, "R2_SECRET_ACCESS_KEY is required"),
     R2_BUCKET_NAME: z.string().min(1, "R2_BUCKET_NAME is required"),
+    DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   },
   experimental__runtimeEnv: process.env,
   // Skip validation during build if env vars aren't available

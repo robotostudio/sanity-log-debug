@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  AlertTriangleIcon,
   CheckCircle2Icon,
   InfoIcon,
   Loader2Icon,
   XCircleIcon,
-  AlertTriangleIcon,
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
@@ -23,7 +23,8 @@ function Toaster({ ...props }: ToasterProps) {
       }}
       toastOptions={{
         classNames: {
-          toast: "group toast bg-zinc-900 text-zinc-100 border border-zinc-800 shadow-lg",
+          toast:
+            "group toast bg-zinc-900 text-zinc-100 border border-zinc-800 shadow-lg",
           title: "text-zinc-100 font-medium",
           description: "text-zinc-400",
           actionButton: "bg-zinc-100 text-zinc-900",

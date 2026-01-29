@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useFilters } from "@/lib/hooks/use-filters";
@@ -23,8 +24,17 @@ interface DashboardProviderProps {
 
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const { queryString } = useFilters();
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const fileFromUrl = searchParams.get("file");
+  const [selectedFile, setSelectedFile] = useState<string | null>(fileFromUrl);
   const loadingToastRef = useRef<string | number | null>(null);
+
+  // Sync with URL param when it changes
+  useEffect(() => {
+    if (fileFromUrl !== selectedFile) {
+      setSelectedFile(fileFromUrl);
+    }
+  }, [fileFromUrl]);
 
   const fileParam = selectedFile
     ? `fileKey=${encodeURIComponent(selectedFile)}`

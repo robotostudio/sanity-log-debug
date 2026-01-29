@@ -14,12 +14,17 @@ export function getFileName(key: string): string {
   return key.split("/").pop() ?? key;
 }
 
-export function truncateFileName(key: string, maxLength = 20): string {
-  const fileName = getFileName(key);
-  if (fileName.length <= maxLength) return fileName;
-  return `${fileName.substring(0, maxLength)}...`;
-}
-
 export function isValidNdjsonFile(file: File): boolean {
   return file.name.endsWith(".ndjson");
+}
+
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

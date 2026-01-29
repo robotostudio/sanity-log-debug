@@ -1,0 +1,176 @@
+"use client";
+
+import {
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { toast } from "sonner";
+import { mutate } from "swr";
+import type { UploadProgress } from "./types";
+import { isValidNdjsonFile } from "./utils";
+
+const FILES_API_ENDPOINT = "/api/files";
+
+const initialUploadProgress: UploadProgress = {
+  status: "idle",
+  percentage: 0,
+  bytesUploaded: 0,
+  bytesTotal: 0,
+  fileName: null,
+};
+
+function uploadWithProgress(
+  url: string,
+  file: File,
+  onProgress: (loaded: number, total: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(e.loaded, e.total);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed: ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", "application/x-ndjson");
+    xhr.send(file);
+  });
+}
+
+interface UploadContextValue {
+  isUploading: boolean;
+  uploadProgress: UploadProgress;
+  uploadFile: (file: File) => Promise<void>;
+}
+
+const UploadContext = createContext<UploadContextValue | null>(null);
+
+export function useUpload(): UploadContextValue {
+  const context = use(UploadContext);
+  if (!context) {
+    throw new Error("useUpload must be used within an UploadProvider");
+  }
+  return context;
+}
+
+interface UploadProviderProps {
+  children: ReactNode;
+}
+
+export function UploadProvider({ children }: UploadProviderProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] =
+    useState<UploadProgress>(initialUploadProgress);
+
+  const uploadFile = useCallback(async (file: File) => {
+    if (!isValidNdjsonFile(file)) {
+      toast.error("Invalid file type", {
+        description: "Please upload an .ndjson file",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress({
+      status: "uploading",
+      percentage: 0,
+      bytesUploaded: 0,
+      bytesTotal: file.size,
+      fileName: file.name,
+    });
+
+    try {
+      const presignRes = await fetch(FILES_API_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name }),
+      });
+
+      if (!presignRes.ok) {
+        throw new Error("Failed to get upload URL");
+      }
+
+      const { url, key } = await presignRes.json();
+
+      await uploadWithProgress(url, file, (loaded, total) => {
+        const percentage = Math.round((loaded / total) * 100);
+        setUploadProgress((prev) => ({
+          ...prev,
+          percentage,
+          bytesUploaded: loaded,
+          bytesTotal: total,
+        }));
+      });
+
+      // Confirm upload complete and trigger processing
+      const confirmRes = await fetch(FILES_API_ENDPOINT, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          key,
+          filename: file.name,
+          size: file.size,
+        }),
+      });
+
+      if (!confirmRes.ok) {
+        throw new Error("Failed to confirm upload");
+      }
+
+      setUploadProgress((prev) => ({
+        ...prev,
+        status: "complete",
+        percentage: 100,
+      }));
+
+      await mutate(FILES_API_ENDPOINT);
+
+      toast.success("File uploaded", {
+        description: `${file.name} is now being processed`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      setUploadProgress((prev) => ({
+        ...prev,
+        status: "error",
+      }));
+      toast.error("Upload failed", {
+        description: message,
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset progress after a short delay to allow UI to show completion
+      setTimeout(() => {
+        setUploadProgress(initialUploadProgress);
+      }, 1500);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      isUploading,
+      uploadProgress,
+      uploadFile,
+    }),
+    [isUploading, uploadProgress, uploadFile]
+  );
+
+  return <UploadContext value={value}>{children}</UploadContext>;
+}
