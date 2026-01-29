@@ -34,9 +34,11 @@ export async function listFiles(): Promise<R2File[]> {
   const response = await r2Client.send(command);
 
   return (response.Contents ?? [])
-    .filter((obj) => obj.Key?.endsWith(".ndjson"))
+    .filter((obj): obj is typeof obj & { Key: string } =>
+      Boolean(obj.Key?.endsWith(".ndjson")),
+    )
     .map((obj) => ({
-      key: obj.Key!,
+      key: obj.Key,
       size: obj.Size ?? 0,
       lastModified: obj.LastModified ?? new Date(),
     }));

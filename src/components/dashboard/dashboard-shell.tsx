@@ -1,157 +1,100 @@
 "use client";
 
-import { useState } from "react";
-import useSWR from "swr";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { formatDuration } from "@/lib/constants";
-import { useFilters } from "@/lib/hooks/use-filters";
-import type { Aggregations } from "@/lib/types";
+import { DashboardProvider, useDashboard } from "./data-state";
 import {
   DonutChart,
   EndpointDistribution,
   StatusDistribution,
 } from "./distribution-charts";
-import { FileManager } from "./file-manager";
+import { FileManagerDefault } from "./file-manager";
 import { FilterBar } from "./filter-bar";
 import { KpiCards } from "./kpi-cards";
 import { LatencyHistogram } from "./latency-histogram";
 import { LogsTable } from "./logs-table";
 import { QueryExplorer } from "./query-explorer";
-import { StatusBadge } from "./status-badge";
+import { SlowestRequests } from "./slowest-requests";
 import { TimeSeriesChart } from "./time-series-chart";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+// ============================================================================
+// Header Component
+// ============================================================================
 
-export function DashboardShell() {
-  const { queryString } = useFilters();
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-
-  const fileParam = selectedFile ? `fileKey=${encodeURIComponent(selectedFile)}` : "";
-  const aggUrl = queryString
-    ? `/api/logs/aggregations?${queryString}${fileParam ? `&${fileParam}` : ""}`
-    : `/api/logs/aggregations${fileParam ? `?${fileParam}` : ""}`;
-
-  const { data: agg } = useSWR<Aggregations>(aggUrl, fetcher, {
-    keepPreviousData: true,
-    revalidateOnFocus: false,
-  });
+function DashboardHeader() {
+  const { state, actions } = useDashboard();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
-        <div className="mx-auto max-w-[1600px] px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="font-mono text-lg font-bold tracking-tight text-zinc-100">
-                Sanity API Logs
-              </h1>
-              <p className="font-mono text-xs text-zinc-500">
-                {agg && (
-                  <span>
-                    {agg.totalFiltered.toLocaleString()} records
-                  </span>
-                )}
-              </p>
-            </div>
-            <FileManager
-              selectedFile={selectedFile}
-              onSelectFile={setSelectedFile}
-            />
+    <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+      <div className="mx-auto max-w-[1600px] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-mono text-lg font-bold tracking-tight text-zinc-100">
+              Sanity API Logs
+            </h1>
+            <p className="font-mono text-xs text-zinc-500">
+              {state.data ? (
+                <span>{state.data.totalFiltered.toLocaleString()} records</span>
+              ) : (
+                <span>No file selected</span>
+              )}
+            </p>
           </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-[1600px] space-y-4 px-4 py-4">
-        <FilterBar />
-
-        <KpiCards data={agg?.kpis ?? null} />
-
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <TimeSeriesChart data={agg?.timeSeries ?? null} />
-          </div>
-          <StatusDistribution data={agg?.statusDistribution ?? null} />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <EndpointDistribution data={agg?.endpointDistribution ?? null} />
-          <DonutChart
-            data={agg?.domainDistribution ?? null}
-            title="By Domain"
-          />
-          <DonutChart
-            data={agg?.methodDistribution ?? null}
-            title="By Method"
+          <FileManagerDefault
+            selectedFile={state.selectedFile}
+            onSelectFile={actions.selectFile}
           />
         </div>
+      </div>
+    </header>
+  );
+}
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <LatencyHistogram data={agg?.latencyBuckets ?? null} />
+// ============================================================================
+// Dashboard Content
+// ============================================================================
 
-          <Card className="border-zinc-800 bg-zinc-900/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-zinc-400">
-                Top 20 Slowest Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-[300px] overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-zinc-800 hover:bg-transparent">
-                      <TableHead className="text-xs text-zinc-500">
-                        Duration
-                      </TableHead>
-                      <TableHead className="text-xs text-zinc-500">
-                        Method
-                      </TableHead>
-                      <TableHead className="text-xs text-zinc-500">
-                        Status
-                      </TableHead>
-                      <TableHead className="text-xs text-zinc-500">
-                        Endpoint
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {agg?.topSlowRequests.map((r) => (
-                      <TableRow
-                        key={r.traceId}
-                        className="border-zinc-800/50 hover:bg-zinc-800/40"
-                      >
-                        <TableCell className="font-mono text-xs text-red-400">
-                          {formatDuration(r.duration)}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-zinc-300">
-                          {r.method}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={r.status} />
-                        </TableCell>
-                        <TableCell className="text-xs text-zinc-400">
-                          {r.endpoint}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+function DashboardContent() {
+  return (
+    <main className="mx-auto max-w-[1600px] space-y-4 px-4 py-4">
+      <FilterBar />
+
+      <KpiCards />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <TimeSeriesChart />
         </div>
+        <StatusDistribution />
+      </div>
 
-        <QueryExplorer data={agg?.queryExplorer ?? null} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <EndpointDistribution />
+        <DonutChart dataKey="domainDistribution" title="By Domain" />
+        <DonutChart dataKey="methodDistribution" title="By Method" />
+      </div>
 
-        <LogsTable queryString={queryString} fileKey={selectedFile} />
-      </main>
-    </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <LatencyHistogram />
+        <SlowestRequests />
+      </div>
+
+      <QueryExplorer />
+
+      <LogsTable />
+    </main>
+  );
+}
+
+// ============================================================================
+// Main Export
+// ============================================================================
+
+export function DashboardShell() {
+  return (
+    <DashboardProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100">
+        <DashboardHeader />
+        <DashboardContent />
+      </div>
+    </DashboardProvider>
   );
 }

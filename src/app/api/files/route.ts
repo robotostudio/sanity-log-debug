@@ -1,5 +1,5 @@
-import { deleteFile, getPresignedUploadUrl, listFiles } from "@/lib/r2";
 import { NextResponse } from "next/server";
+import { deleteFile, getPresignedUploadUrl, listFiles } from "@/lib/r2";
 
 // GET - List all uploaded files
 export async function GET() {

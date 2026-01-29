@@ -30,9 +30,7 @@ export async function loadRecords(fileKey?: string): Promise<LogRecord[]> {
       return [];
     }
     // Sort by lastModified descending and pick the most recent
-    files.sort(
-      (a, b) => b.lastModified.getTime() - a.lastModified.getTime(),
-    );
+    files.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime());
     targetKey = files[0].key;
   }
 

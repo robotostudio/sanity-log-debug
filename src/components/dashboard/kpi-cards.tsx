@@ -1,19 +1,23 @@
 "use client";
 
+import { BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/constants";
 import type { KpiData } from "@/lib/types";
+import { useDashboard } from "./data-state";
 
-function KpiCard({
-  title,
-  value,
-  subtitle,
-}: {
+// ============================================================================
+// KPI Card Component
+// ============================================================================
+
+interface KpiCardProps {
   title: string;
   value: string;
   subtitle?: string;
-}) {
+}
+
+function KpiCard({ title, value, subtitle }: KpiCardProps) {
   return (
     <Card className="border-zinc-800 bg-zinc-900/50">
       <CardHeader className="pb-2">
@@ -25,30 +29,75 @@ function KpiCard({
         <div className="font-mono text-2xl font-bold text-zinc-100">
           {value}
         </div>
-        {subtitle && <p className="mt-1 text-xs text-zinc-500">{subtitle}</p>}
+        {subtitle ? (
+          <p className="mt-1 text-xs text-zinc-500">{subtitle}</p>
+        ) : null}
       </CardContent>
     </Card>
   );
 }
 
-export function KpiCards({ data }: { data: KpiData | null }) {
-  if (!data) {
-    return (
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-        {["kpi-1", "kpi-2", "kpi-3", "kpi-4", "kpi-5"].map((id) => (
-          <Card key={id} className="border-zinc-800 bg-zinc-900/50">
-            <CardHeader className="pb-2">
-              <Skeleton className="h-3 w-20" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-24" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
+// ============================================================================
+// Loading State
+// ============================================================================
 
+function KpiCardSkeleton() {
+  return (
+    <Card className="border-zinc-800 bg-zinc-900/50">
+      <CardHeader className="pb-2">
+        <Skeleton className="h-3 w-20" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="mt-2 h-3 w-16" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function KpiCardsLoading() {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      {KPI_LABELS.map((label) => (
+        <KpiCardSkeleton key={label} />
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// Empty State
+// ============================================================================
+
+const KPI_LABELS = ["Requests", "Avg Duration", "Error Rate", "P95", "P99"];
+
+function KpiCardsEmpty() {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      {KPI_LABELS.map((label) => (
+        <Card key={label} className="border-zinc-800 bg-zinc-900/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium uppercase tracking-wider text-zinc-600">
+              {label}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2 text-zinc-600">
+              <BarChart3 className="h-5 w-5" />
+              <span className="font-mono text-lg">--</span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// Data State
+// ============================================================================
+
+function KpiCardsData({ data }: { data: KpiData }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
       <KpiCard
@@ -70,4 +119,26 @@ export function KpiCards({ data }: { data: KpiData | null }) {
       <KpiCard title="P99 Latency" value={formatDuration(data.p99Latency)} />
     </div>
   );
+}
+
+// ============================================================================
+// Main Export
+// ============================================================================
+
+export function KpiCards() {
+  const { state } = useDashboard();
+
+  if (state.status === "empty") {
+    return <KpiCardsEmpty />;
+  }
+
+  if (state.status === "loading") {
+    return <KpiCardsLoading />;
+  }
+
+  if (state.status === "error" || !state.data?.kpis) {
+    return <KpiCardsEmpty />;
+  }
+
+  return <KpiCardsData data={state.data.kpis} />;
 }
