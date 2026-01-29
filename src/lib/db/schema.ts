@@ -24,7 +24,7 @@ export const logRecords = pgTable(
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     fileId: text("file_id")
       .notNull()
-      .references(() => files.id),
+      .references(() => files.id, { onDelete: "cascade" }),
     // Root level fields
     timestamp: timestamp("timestamp").notNull(),
     traceId: text("trace_id"),

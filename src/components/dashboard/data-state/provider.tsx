@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { type ReactNode, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useFilters } from "@/lib/hooks/use-filters";
@@ -24,23 +17,19 @@ interface DashboardProviderProps {
 
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const { queryString } = useFilters();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const fileFromUrl = searchParams.get("file");
-  const [selectedFile, setSelectedFile] = useState<string | null>(fileFromUrl);
-  const loadingToastRef = useRef<string | number | null>(null);
 
-  // Sync with URL param when it changes
-  useEffect(() => {
-    if (fileFromUrl !== selectedFile) {
-      setSelectedFile(fileFromUrl);
-    }
-  }, [fileFromUrl]);
+  // URL is the single source of truth for selected file
+  const selectedFile = searchParams.get("file");
+  const prevStatusRef = useRef<DataStatus | null>(null);
+  const loadingToastRef = useRef<string | number | null>(null);
 
   const fileParam = selectedFile
     ? `fileKey=${encodeURIComponent(selectedFile)}`
     : "";
 
-  // Only fetch when a file is selected
   const shouldFetch = selectedFile !== null;
 
   const aggUrl = shouldFetch
@@ -66,8 +55,8 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     return "success";
   }, [selectedFile, error, isLoading, data]);
 
-  // Toast notifications for state changes
-  useEffect(() => {
+  // Handle toast notifications without useEffect - compare with previous status
+  if (status !== prevStatusRef.current) {
     if (status === "loading") {
       loadingToastRef.current = toast.loading("Loading dashboard data...");
     } else if (loadingToastRef.current) {
@@ -84,9 +73,9 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       }
       loadingToastRef.current = null;
     }
-  }, [status, data, error]);
+    prevStatusRef.current = status;
+  }
 
-  // isFiltering is true when we have data but are fetching new data (filter change)
   const isFiltering = isValidating && status === "success";
 
   const state: DashboardState = useMemo(
@@ -100,9 +89,19 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     [status, selectedFile, data, error, isFiltering],
   );
 
-  const selectFile = useCallback((key: string | null) => {
-    setSelectedFile(key);
-  }, []);
+  // Update URL when selecting a file - URL is the source of truth
+  const selectFile = useCallback(
+    (key: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (key) {
+        params.set("file", key);
+      } else {
+        params.delete("file");
+      }
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams],
+  );
 
   const actions = useMemo(() => ({ selectFile }), [selectFile]);
 
