@@ -14,6 +14,8 @@ export default function PipelinePage() {
   );
 }
 
+const PIPELINE_SKELETON_IDS = ["kpi-0", "kpi-1", "kpi-2", "kpi-3"];
+
 function PipelineSkeleton() {
   return (
     <div className="space-y-6">
@@ -25,9 +27,9 @@ function PipelineSkeleton() {
 
       {/* KPI cards skeleton */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+        {PIPELINE_SKELETON_IDS.map((id) => (
           <div
-            key={i}
+            key={id}
             className="h-24 animate-pulse rounded-xl bg-zinc-800/50"
           />
         ))}

@@ -15,6 +15,16 @@ import { isValidUrlDate, parseDateFromUrl } from "@/lib/date-utils";
 import { db, files, logRecords } from "@/lib/db";
 import type { LogRecord as DbLogRecord } from "@/lib/db/schema";
 
+// Pagination limits
+const MIN_PAGE = 1;
+const MAX_PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 50;
+
+// Escape special characters for SQL LIKE patterns
+function escapeLikePattern(value: string): string {
+  return value.replace(/[%_\\]/g, "\\$&");
+}
+
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const fileKey = params.get("fileKey");
@@ -39,9 +49,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Parse pagination and sorting
-  const page = Number.parseInt(params.get("page") ?? "1", 10);
-  const pageSize = Number.parseInt(params.get("pageSize") ?? "50", 10);
+  // Parse and validate pagination
+  const rawPage = Number.parseInt(params.get("page") ?? "1", 10);
+  const rawPageSize = Number.parseInt(
+    params.get("pageSize") ?? String(DEFAULT_PAGE_SIZE),
+    10,
+  );
+
+  // Validate pagination bounds
+  const page = Number.isNaN(rawPage) || rawPage < MIN_PAGE ? MIN_PAGE : rawPage;
+  const pageSize = Number.isNaN(rawPageSize)
+    ? DEFAULT_PAGE_SIZE
+    : Math.min(Math.max(1, rawPageSize), MAX_PAGE_SIZE);
+
   const sortBy = params.get("sortBy") ?? "timestamp";
   const sortDir = params.get("sortDir") ?? "desc";
 
@@ -112,15 +132,17 @@ export async function GET(request: NextRequest) {
     conditions.push(eq(logRecords.isStudioRequest, 0));
   }
 
-  // Search filter (URL or traceId)
+  // Search filter (URL or traceId) - escape special LIKE characters
   const search = params.get("search");
   if (search) {
-    conditions.push(
-      or(
-        ilike(logRecords.url, `%${search}%`),
-        ilike(logRecords.traceId, `%${search}%`),
-      )!,
+    const escapedSearch = escapeLikePattern(search);
+    const searchCondition = or(
+      ilike(logRecords.url, `%${escapedSearch}%`),
+      ilike(logRecords.traceId, `%${escapedSearch}%`),
     );
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
   }
 
   // GROQ ID filter

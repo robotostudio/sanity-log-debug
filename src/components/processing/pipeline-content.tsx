@@ -33,7 +33,13 @@ interface ProcessingData {
   totalRecords: number;
 }
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
 
 export function PipelineContent() {
   const { data, error, isLoading } = useSWR<ProcessingData>(
@@ -274,13 +280,15 @@ interface JobsTableProps {
   loading?: boolean;
 }
 
+const SKELETON_ROW_IDS = ["skel-0", "skel-1", "skel-2", "skel-3", "skel-4"];
+
 function JobsTable({ jobs, loading }: JobsTableProps) {
   if (loading) {
     return (
       <div className="space-y-2">
-        {[...Array(5)].map((_, i) => (
+        {SKELETON_ROW_IDS.map((id) => (
           <div
-            key={i}
+            key={id}
             className="h-14 animate-pulse rounded-md bg-zinc-800/50"
           />
         ))}

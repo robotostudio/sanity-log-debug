@@ -116,44 +116,35 @@ function MultiSelectFilter({
             className="mb-2 h-7 border-zinc-700 bg-zinc-800 text-xs placeholder:text-zinc-500"
           />
         )}
-        <div className="max-h-64 space-y-0.5 overflow-y-auto">
+        <div className="max-h-64 space-y-0.5 overflow-y-auto" role="listbox">
           {filteredOptions.map((opt) => {
             const checked = selected.includes(opt);
+            const checkboxId = `filter-${label.toLowerCase()}-${opt}`;
+            const toggleOption = () => {
+              if (checked) {
+                onChange(selected.filter((s) => s !== opt));
+              } else {
+                onChange([...selected, opt]);
+              }
+            };
             return (
-              <div
+              <label
                 key={opt}
+                htmlFor={checkboxId}
                 className={cn(
                   "flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs",
                   "transition-colors hover:bg-zinc-800",
                   checked ? "text-zinc-100" : "text-zinc-400",
                 )}
-                onClick={() => {
-                  if (checked) {
-                    onChange(selected.filter((s) => s !== opt));
-                  } else {
-                    onChange([...selected, opt]);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    if (checked) {
-                      onChange(selected.filter((s) => s !== opt));
-                    } else {
-                      onChange([...selected, opt]);
-                    }
-                  }
-                }}
-                tabIndex={0}
-                role="option"
-                aria-selected={checked}
               >
                 <Checkbox
+                  id={checkboxId}
                   checked={checked}
-                  className="h-3.5 w-3.5 pointer-events-none border-zinc-600 data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600"
+                  onCheckedChange={toggleOption}
+                  className="h-3.5 w-3.5 border-zinc-600 data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600"
                 />
                 <span className="font-mono">{opt}</span>
-              </div>
+              </label>
             );
           })}
         </div>

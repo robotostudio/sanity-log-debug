@@ -251,21 +251,17 @@ async function getSqlAggregations(
     };
   }
 
-  // Calculate percentiles with a separate query (PostgreSQL percentile_cont)
-  const percentilesResult = await db.execute(
-    sql`
-      SELECT
-        PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY duration) as p50,
-        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration) as p95,
-        PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY duration) as p99
-      FROM log_records
-      WHERE file_id = ${fileId}
-    `,
-  );
+  // Calculate percentiles with filters applied (PostgreSQL percentile_cont)
+  const percentilesResult = await db
+    .select({
+      p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+      p95: sql<number>`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+      p99: sql<number>`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+    })
+    .from(logRecords)
+    .where(whereClause);
 
-  const percentiles = percentilesResult.rows[0] as
-    | { p50: number; p95: number; p99: number }
-    | undefined;
+  const percentiles = percentilesResult[0];
 
   // Calculate hour span
   const minTime = kpiRow?.minTimestamp
@@ -286,24 +282,49 @@ async function getSqlAggregations(
     requestsPerHour: total / hourSpan,
   };
 
-  // Process time series into expected format
-  const hourMap = new Map<string, TimeSeriesBucket>();
+  // Process time series into expected format with weighted average
+  const hourMap = new Map<
+    string,
+    TimeSeriesBucket & { totalCount: number; totalDuration: number }
+  >();
   for (const row of timeSeriesResult) {
     const hourKey = row.hour;
     let bucket = hourMap.get(hourKey);
     if (!bucket) {
-      bucket = { hour: hourKey, info: 0, warn: 0, error: 0, avgDuration: 0 };
+      bucket = {
+        hour: hourKey,
+        info: 0,
+        warn: 0,
+        error: 0,
+        avgDuration: 0,
+        totalCount: 0,
+        totalDuration: 0,
+      };
       hourMap.set(hourKey, bucket);
     }
     const rowCount = Number(row.count);
+    const rowAvgDuration = Number(row.avgDuration ?? 0);
+
     if (row.severity === "INFO") bucket.info = rowCount;
     else if (row.severity === "WARN") bucket.warn = rowCount;
     else bucket.error = rowCount;
-    bucket.avgDuration = Number(row.avgDuration ?? 0);
+
+    // Accumulate for weighted average calculation
+    bucket.totalCount += rowCount;
+    bucket.totalDuration += rowAvgDuration * rowCount;
   }
-  const timeSeries = Array.from(hourMap.values()).sort((a, b) =>
-    a.hour.localeCompare(b.hour),
-  );
+
+  // Calculate weighted average for each hour bucket
+  const timeSeries: TimeSeriesBucket[] = Array.from(hourMap.values())
+    .map((bucket) => ({
+      hour: bucket.hour,
+      info: bucket.info,
+      warn: bucket.warn,
+      error: bucket.error,
+      avgDuration:
+        bucket.totalCount > 0 ? bucket.totalDuration / bucket.totalCount : 0,
+    }))
+    .sort((a, b) => a.hour.localeCompare(b.hour));
 
   const statusDistribution: DistributionItem[] = statusResult.map((row) => ({
     name: String(row.status),
@@ -328,45 +349,55 @@ async function getSqlAggregations(
     count: Number(row.count),
   }));
 
-  // Latency buckets - need a separate query for histogram
-  const latencyBucketsResult = await db.execute(
-    sql`
-      SELECT bucket, count FROM (
-        SELECT
-          CASE
-            WHEN duration < 100 THEN '< 100ms'
-            WHEN duration < 500 THEN '100-500ms'
-            WHEN duration < 1000 THEN '500ms-1s'
-            WHEN duration < 2000 THEN '1-2s'
-            WHEN duration < 5000 THEN '2-5s'
-            ELSE '> 5s'
-          END as bucket,
-          CASE
-            WHEN duration < 100 THEN 1
-            WHEN duration < 500 THEN 2
-            WHEN duration < 1000 THEN 3
-            WHEN duration < 2000 THEN 4
-            WHEN duration < 5000 THEN 5
-            ELSE 6
-          END as sort_order,
-          COUNT(*) as count
-        FROM log_records
-        WHERE file_id = ${fileId}
-        GROUP BY 1, 2
-      ) sub
-      ORDER BY sort_order
-    `,
-  );
+  // Latency buckets with filters applied
+  const latencyBucketsResult = await db
+    .select({
+      bucket: sql<string>`CASE
+        WHEN ${logRecords.duration} < 100 THEN '< 100ms'
+        WHEN ${logRecords.duration} < 500 THEN '100-500ms'
+        WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
+        WHEN ${logRecords.duration} < 2000 THEN '1-2s'
+        WHEN ${logRecords.duration} < 5000 THEN '2-5s'
+        ELSE '> 5s'
+      END`,
+      sortOrder: sql<number>`CASE
+        WHEN ${logRecords.duration} < 100 THEN 1
+        WHEN ${logRecords.duration} < 500 THEN 2
+        WHEN ${logRecords.duration} < 1000 THEN 3
+        WHEN ${logRecords.duration} < 2000 THEN 4
+        WHEN ${logRecords.duration} < 5000 THEN 5
+        ELSE 6
+      END`,
+      count: count(),
+    })
+    .from(logRecords)
+    .where(whereClause)
+    .groupBy(
+      sql`CASE
+        WHEN ${logRecords.duration} < 100 THEN '< 100ms'
+        WHEN ${logRecords.duration} < 500 THEN '100-500ms'
+        WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
+        WHEN ${logRecords.duration} < 2000 THEN '1-2s'
+        WHEN ${logRecords.duration} < 5000 THEN '2-5s'
+        ELSE '> 5s'
+      END`,
+      sql`CASE
+        WHEN ${logRecords.duration} < 100 THEN 1
+        WHEN ${logRecords.duration} < 500 THEN 2
+        WHEN ${logRecords.duration} < 1000 THEN 3
+        WHEN ${logRecords.duration} < 2000 THEN 4
+        WHEN ${logRecords.duration} < 5000 THEN 5
+        ELSE 6
+      END`,
+    )
+    .orderBy(sql`2`);
 
   const latencyBuckets: DistributionItem[] = LATENCY_BUCKETS.map((b) => ({
     name: b.label,
     count: 0,
   }));
 
-  for (const row of latencyBucketsResult.rows as {
-    bucket: string;
-    count: number;
-  }[]) {
+  for (const row of latencyBucketsResult) {
     const idx = latencyBuckets.findIndex((b) => b.name === row.bucket);
     if (idx >= 0) {
       latencyBuckets[idx].count = Number(row.count);

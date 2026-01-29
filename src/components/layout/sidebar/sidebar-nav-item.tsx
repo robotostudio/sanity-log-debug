@@ -14,8 +14,12 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
   const pathname = usePathname();
   const { isCollapsed } = useSidebar();
   const Icon = item.icon;
+
+  // Special-case root href to avoid marking it active for all paths
   const isActive =
-    pathname === item.href || pathname.startsWith(`${item.href}/`);
+    item.href === "/"
+      ? pathname === "/"
+      : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
   return (
     <Link
@@ -27,6 +31,8 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
           : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200",
         isCollapsed && "justify-center px-2",
       )}
+      aria-label={isCollapsed ? item.label : undefined}
+      aria-current={isActive ? "page" : undefined}
     >
       <Icon
         className={cn(

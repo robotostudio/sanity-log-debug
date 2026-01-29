@@ -7,6 +7,7 @@ import {
   Loader2Icon,
   XCircleIcon,
 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 function Toaster({ ...props }: ToasterProps) {
@@ -40,7 +41,7 @@ function Toaster({ ...props }: ToasterProps) {
           "--normal-bg": "rgb(24 24 27)",
           "--normal-text": "rgb(244 244 245)",
           "--normal-border": "rgb(39 39 42)",
-        } as React.CSSProperties
+        } as CSSProperties
       }
       {...props}
     />

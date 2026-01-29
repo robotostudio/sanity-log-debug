@@ -77,21 +77,39 @@ export async function PUT(request: Request) {
 
     const fileId = crypto.randomUUID();
 
-    // Start the workflow and get the run handle
-    const workflowRun = await start(processLogFile, [{ fileId, fileKey: key }]);
-    const workflowRunId = workflowRun.runId;
-    logger.info("Processing workflow started", { fileId, workflowRunId });
-
-    // Create file record with workflow run ID
+    // Create file record first (so we have a record even if workflow fails to start)
     await db.insert(files).values({
       id: fileId,
       key,
       filename: filename || key.split("/").pop() || key,
       size: size || 0,
       processingStatus: "pending",
-      workflowRunId,
     });
-    logger.info("File record created", { fileId, key, workflowRunId });
+    logger.info("File record created", { fileId, key });
+
+    // Start the workflow and update file with run ID
+    let workflowRunId: string | null = null;
+    try {
+      const workflowRun = await start(processLogFile, [
+        { fileId, fileKey: key },
+      ]);
+      workflowRunId = workflowRun.runId;
+      logger.info("Processing workflow started", { fileId, workflowRunId });
+
+      // Update file record with workflow run ID
+      await db.update(files).set({ workflowRunId }).where(eq(files.id, fileId));
+    } catch (workflowError) {
+      logger.error("Failed to start workflow", {
+        fileId,
+        error: workflowError,
+      });
+      // Mark file as failed since workflow couldn't start
+      await db
+        .update(files)
+        .set({ processingStatus: "failed" })
+        .where(eq(files.id, fileId));
+      throw workflowError;
+    }
 
     return NextResponse.json({
       success: true,
@@ -146,13 +164,11 @@ export async function DELETE(request: Request) {
     await db.delete(files).where(eq(files.key, key));
     logger.info("File record deleted");
 
-    // Try to delete from R2 (may already be deleted by workflow)
-    try {
-      await deleteFile(key);
-      logger.info("R2 file deleted");
-    } catch (r2Error) {
+    // Try to delete from R2 (idempotent - may already be deleted by workflow)
+    await deleteFile(key).catch((r2Error) => {
       logger.warn("R2 delete skipped (may already be deleted)", r2Error);
-    }
+    });
+    logger.info("R2 file deletion attempted");
 
     logger.info("File deletion complete", { key });
     return NextResponse.json({ success: true });

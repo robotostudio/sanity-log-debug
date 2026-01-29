@@ -37,9 +37,13 @@ export function SidebarProvider({
 
   // Hydrate from localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) {
-      setIsCollapsed(stored === "true");
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored !== null) {
+        setIsCollapsed(stored === "true");
+      }
+    } catch (error) {
+      console.warn("Failed to read sidebar state from localStorage:", error);
     }
     setIsHydrated(true);
   }, []);
@@ -47,7 +51,14 @@ export function SidebarProvider({
   // Persist to localStorage on change
   useEffect(() => {
     if (isHydrated) {
-      localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+      try {
+        localStorage.setItem(STORAGE_KEY, String(isCollapsed));
+      } catch (error) {
+        console.error(
+          `Failed to write ${STORAGE_KEY}=${isCollapsed} to localStorage:`,
+          error,
+        );
+      }
     }
   }, [isCollapsed, isHydrated]);
 

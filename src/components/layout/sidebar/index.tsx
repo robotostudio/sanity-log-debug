@@ -13,6 +13,7 @@ function Logo({ className }: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn("h-6 w-6", className)}
+      aria-hidden="true"
     >
       <rect
         width="32"

@@ -1,7 +1,7 @@
 "use step";
 
-import { deleteFile } from "@/lib/r2";
 import { Logger } from "@/lib/logger";
+import { deleteFile } from "@/lib/r2";
 
 const logger = new Logger("workflow/delete-from-r2");
 

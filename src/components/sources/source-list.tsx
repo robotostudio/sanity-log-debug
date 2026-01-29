@@ -10,6 +10,8 @@ interface SourceListProps {
   onDelete: (key: string) => Promise<void>;
 }
 
+const SKELETON_IDS = ["skeleton-0", "skeleton-1", "skeleton-2"];
+
 export function SourceList({ sources, isLoading, onDelete }: SourceListProps) {
   if (isLoading) {
     return <SourceListSkeleton />;
@@ -44,8 +46,11 @@ export function SourceList({ sources, isLoading, onDelete }: SourceListProps) {
 function SourceListSkeleton() {
   return (
     <div className="space-y-2">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-16 rounded-lg bg-zinc-800/50 animate-pulse" />
+      {SKELETON_IDS.map((id) => (
+        <div
+          key={id}
+          className="h-16 rounded-lg bg-zinc-800/50 animate-pulse"
+        />
       ))}
     </div>
   );

@@ -116,6 +116,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-zinc-500 opacity-0 group-hover:opacity-100 hover:text-zinc-100 transition-opacity"
+                aria-label="More actions"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
@@ -193,6 +194,11 @@ function StatusBadge({ status }: { status?: ProcessingStatus }) {
     },
     error: {
       label: "Error",
+      icon: <AlertCircle className="h-3 w-3" />,
+      className: "bg-red-500/20 text-red-400",
+    },
+    failed: {
+      label: "Failed",
       icon: <AlertCircle className="h-3 w-3" />,
       className: "bg-red-500/20 text-red-400",
     },

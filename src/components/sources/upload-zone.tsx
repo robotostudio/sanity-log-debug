@@ -2,10 +2,13 @@
 
 import { CheckCircle2, Loader2, Upload, XCircle } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { UploadProgress } from "./types";
 import { formatBytes } from "./utils";
+
+const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
 
 interface UploadZoneProps {
   onUpload: (file: File) => Promise<void>;
@@ -40,9 +43,17 @@ export function UploadZone({
       setIsDragOver(false);
 
       const file = e.dataTransfer.files[0];
-      if (file) {
-        await onUpload(file);
+      if (!file) return;
+
+      // Validate file extension
+      if (!file.name.toLowerCase().endsWith(".ndjson")) {
+        toast.error("Invalid file type", {
+          description: "Please drop an .ndjson file",
+        });
+        return;
       }
+
+      await onUpload(file);
     },
     [onUpload],
   );
@@ -95,16 +106,14 @@ export function UploadZone({
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={handleClick}
-      onKeyDown={(e) => e.key === "Enter" && handleClick()}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "group relative cursor-pointer rounded-md border-2 border-dashed p-12 text-center transition-colors",
+        "group relative w-full cursor-pointer rounded-md border-2 border-dashed p-12 text-center transition-colors",
         isDragOver
           ? "border-zinc-500 bg-zinc-800"
           : "border-zinc-800 bg-zinc-900 hover:border-zinc-700",
@@ -135,9 +144,11 @@ export function UploadZone({
           Drag & drop .ndjson files here
         </p>
         <p className="mt-1 text-xs text-zinc-500">or click to browse</p>
-        <p className="mt-4 text-xs text-zinc-600">Supports files up to 500MB</p>
+        <p className="mt-4 text-xs text-zinc-600">
+          Supports files up to {formatBytes(MAX_FILE_SIZE_BYTES)}
+        </p>
       </div>
-    </div>
+    </button>
   );
 }
 

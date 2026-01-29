@@ -6,6 +6,7 @@ import {
   use,
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import type { UploadProgress } from "./types";
 import { isValidNdjsonFile } from "./utils";
 
 const FILES_API_ENDPOINT = "/api/files";
+const MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024; // 500MB
 
 const initialUploadProgress: UploadProgress = {
   status: "idle",
@@ -79,11 +81,22 @@ export function UploadProvider({ children }: UploadProviderProps) {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>(
     initialUploadProgress,
   );
+  const uploadResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const uploadFile = useCallback(async (file: File) => {
     if (!isValidNdjsonFile(file)) {
       toast.error("Invalid file type", {
         description: "Please upload an .ndjson file",
+      });
+      return;
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error("File too large", {
+        description: `Maximum file size is ${Math.round(MAX_FILE_SIZE_BYTES / (1024 * 1024))}MB. Your file is ${Math.round(file.size / (1024 * 1024))}MB.`,
       });
       return;
     }
@@ -157,9 +170,14 @@ export function UploadProvider({ children }: UploadProviderProps) {
       });
     } finally {
       setIsUploading(false);
+      // Clear any existing timer before setting a new one
+      if (uploadResetTimerRef.current) {
+        clearTimeout(uploadResetTimerRef.current);
+      }
       // Reset progress after a short delay to allow UI to show completion
-      setTimeout(() => {
+      uploadResetTimerRef.current = setTimeout(() => {
         setUploadProgress(initialUploadProgress);
+        uploadResetTimerRef.current = null;
       }, 1500);
     }
   }, []);

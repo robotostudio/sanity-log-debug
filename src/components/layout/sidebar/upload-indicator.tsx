@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-provider";
 
 export function UploadIndicator() {
-  const { isUploading, uploadProgress } = useUpload();
+  const { uploadProgress } = useUpload();
   const { isCollapsed } = useSidebar();
 
   if (uploadProgress.status === "idle") {

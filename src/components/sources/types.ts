@@ -3,6 +3,7 @@ export type ProcessingStatus =
   | "processing"
   | "ready"
   | "error"
+  | "failed"
   | "legacy";
 
 export interface Source {

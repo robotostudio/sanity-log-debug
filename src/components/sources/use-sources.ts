@@ -9,7 +9,16 @@ import { useUpload } from "./upload-provider";
 const POLL_INTERVAL_MS = 2000;
 const FILES_API_ENDPOINT = "/api/files";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "");
+    throw new Error(
+      `Failed to fetch files: ${res.status} ${res.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
+    );
+  }
+  return res.json();
+}
 
 export function useSources() {
   const { isUploading, uploadProgress, uploadFile } = useUpload();

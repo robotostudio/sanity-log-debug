@@ -10,6 +10,9 @@ function Progress({
   value,
   ...props
 }: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+  // Clamp value between 0 and 100
+  const clampedValue = Math.min(100, Math.max(0, value ?? 0));
+
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -17,6 +20,9 @@ function Progress({
         "bg-primary/20 relative h-2 w-full overflow-hidden rounded-full",
         className,
       )}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={clampedValue}
       {...props}
     >
       <ProgressPrimitive.Indicator

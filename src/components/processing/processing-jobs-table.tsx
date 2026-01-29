@@ -16,6 +16,8 @@ interface ProcessingJobsTableProps {
   loading?: boolean;
 }
 
+const SKELETON_IDS = ["skel-0", "skel-1", "skel-2", "skel-3", "skel-4"];
+
 export function ProcessingJobsTable({
   jobs,
   loading,
@@ -23,8 +25,8 @@ export function ProcessingJobsTable({
   if (loading) {
     return (
       <div className="space-y-2">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-12 bg-muted animate-pulse rounded" />
+        {SKELETON_IDS.map((id) => (
+          <div key={id} className="h-12 bg-muted animate-pulse rounded" />
         ))}
       </div>
     );

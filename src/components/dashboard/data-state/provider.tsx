@@ -9,7 +9,16 @@ import type { Aggregations } from "@/lib/types";
 import { DashboardContext } from "./context";
 import type { DashboardState, DataStatus } from "./types";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+async function fetcher(url: string) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "");
+    throw new Error(
+      `Failed to fetch: ${res.status} ${res.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
+    );
+  }
+  return res.json();
+}
 
 interface DashboardProviderProps {
   children: ReactNode;
@@ -68,7 +77,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       } else if (status === "error") {
         toast.error("Failed to load data", {
           id: loadingToastRef.current,
-          description: error?.message ?? "An error occurred",
+          description: error?.message ?? String(error) ?? "An error occurred",
         });
       }
       loadingToastRef.current = null;
@@ -83,7 +92,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       status,
       selectedFile,
       data: data ?? null,
-      error: error?.message ?? null,
+      error: error?.message ?? (error ? String(error) : null),
       isFiltering,
     }),
     [status, selectedFile, data, error, isFiltering],

@@ -14,6 +14,8 @@ export default function SourcesPageRoute() {
   );
 }
 
+const SOURCES_SKELETON_IDS = ["row-0", "row-1", "row-2"];
+
 function SourcesSkeleton() {
   return (
     <div className="space-y-8">
@@ -29,9 +31,9 @@ function SourcesSkeleton() {
       {/* List skeleton */}
       <div className="space-y-2">
         <div className="h-6 w-32 bg-zinc-800/50 animate-pulse rounded" />
-        {[...Array(3)].map((_, i) => (
+        {SOURCES_SKELETON_IDS.map((id) => (
           <div
-            key={i}
+            key={id}
             className="h-16 rounded-lg bg-zinc-800/50 animate-pulse"
           />
         ))}

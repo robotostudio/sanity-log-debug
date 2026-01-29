@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { useDashboard } from "./data-state";
 import {
@@ -28,6 +29,28 @@ export function AnalyticsContent() {
           description="Select a data source to view analytics"
         />
         <EmptyAnalytics />
+      </div>
+    );
+  }
+
+  // Show error state when data fails to load
+  if (state.status === "error") {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Analytics"
+          description="Failed to load analytics data"
+        />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 p-12 text-center">
+          <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
+          <h3 className="text-lg font-medium text-zinc-100">
+            Error Loading Data
+          </h3>
+          <p className="mt-2 text-sm text-zinc-400 max-w-md">
+            {state.error ??
+              "An unexpected error occurred while loading the analytics data."}
+          </p>
+        </div>
       </div>
     );
   }

@@ -7,6 +7,8 @@ export const metadata = {
   description: "Operational dashboard for Sanity API request logs",
 };
 
+const SKELETON_IDS = ["skeleton-0", "skeleton-1", "skeleton-2", "skeleton-3"];
+
 export default function AnalyticsPage() {
   return (
     <Suspense fallback={<AnalyticsSkeleton />}>
@@ -31,9 +33,9 @@ function AnalyticsSkeleton() {
 
       {/* KPI cards skeleton */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
+        {SKELETON_IDS.map((id) => (
           <div
-            key={i}
+            key={id}
             className="h-24 rounded-xl bg-zinc-800/50 animate-pulse"
           />
         ))}

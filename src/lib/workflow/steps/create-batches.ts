@@ -1,7 +1,7 @@
 "use step";
 
-import { getFileContent } from "@/lib/r2";
 import { Logger } from "@/lib/logger";
+import { getFileContent } from "@/lib/r2";
 import type { LogRecord } from "@/lib/types";
 
 const logger = new Logger("workflow/create-batches");

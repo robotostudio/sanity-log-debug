@@ -1,4 +1,4 @@
-import { desc, sql } from "drizzle-orm";
+import { desc, inArray, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { Run } from "workflow/api";
 import { db, files, logRecords } from "@/lib/db";
@@ -53,7 +53,7 @@ export async function GET() {
       db
         .select()
         .from(files)
-        .where(sql`${files.processingStatus} IN ('pending', 'processing')`)
+        .where(inArray(files.processingStatus, ["pending", "processing"]))
         .orderBy(files.uploadedAt),
     ]);
 
@@ -71,7 +71,7 @@ export async function GET() {
           count: sql<number>`count(*)::int`,
         })
         .from(logRecords)
-        .where(sql`${logRecords.fileId} IN ${processingJobIds}`)
+        .where(inArray(logRecords.fileId, processingJobIds))
         .groupBy(logRecords.fileId);
 
       progressMap = Object.fromEntries(
