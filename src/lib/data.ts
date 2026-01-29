@@ -1,6 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { LATENCY_BUCKETS } from "./constants";
+import { getFileContent, listFiles } from "./r2";
 import type {
   Aggregations,
   DistributionItem,
@@ -10,19 +9,45 @@ import type {
   TimeSeriesBucket,
 } from "./types";
 
+// Cache with file key tracking
 let cachedRecords: LogRecord[] | null = null;
+let cachedFileKey: string | null = null;
 
-export function loadRecords(): LogRecord[] {
+export async function loadRecords(fileKey?: string): Promise<LogRecord[]> {
+  // If a specific file is requested and it's different from cached, reload
+  if (fileKey && fileKey !== cachedFileKey) {
+    cachedRecords = null;
+    cachedFileKey = null;
+  }
+
   if (cachedRecords) return cachedRecords;
 
-  const filePath = join(
-    process.cwd(),
-    "src/data/kn0uy6kh-2026-01-21-2026-01-28.ndjson",
-  );
-  const content = readFileSync(filePath, "utf-8");
+  // If no specific file requested, use the most recent one
+  let targetKey = fileKey;
+  if (!targetKey) {
+    const files = await listFiles();
+    if (files.length === 0) {
+      return [];
+    }
+    // Sort by lastModified descending and pick the most recent
+    files.sort(
+      (a, b) => b.lastModified.getTime() - a.lastModified.getTime(),
+    );
+    targetKey = files[0].key;
+  }
+
+  const content = await getFileContent(targetKey);
   const lines = content.trim().split("\n");
   cachedRecords = lines.map((line) => JSON.parse(line) as LogRecord);
+  cachedFileKey = targetKey;
+
   return cachedRecords;
+}
+
+// Clear cache when a new file is uploaded
+export function clearRecordCache(): void {
+  cachedRecords = null;
+  cachedFileKey = null;
 }
 
 export function getFilteredRecords(

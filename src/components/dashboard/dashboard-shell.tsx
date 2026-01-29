@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,6 +19,7 @@ import {
   EndpointDistribution,
   StatusDistribution,
 } from "./distribution-charts";
+import { FileManager } from "./file-manager";
 import { FilterBar } from "./filter-bar";
 import { KpiCards } from "./kpi-cards";
 import { LatencyHistogram } from "./latency-histogram";
@@ -30,10 +32,12 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function DashboardShell() {
   const { queryString } = useFilters();
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
+  const fileParam = selectedFile ? `fileKey=${encodeURIComponent(selectedFile)}` : "";
   const aggUrl = queryString
-    ? `/api/logs/aggregations?${queryString}`
-    : "/api/logs/aggregations";
+    ? `/api/logs/aggregations?${queryString}${fileParam ? `&${fileParam}` : ""}`
+    : `/api/logs/aggregations${fileParam ? `?${fileParam}` : ""}`;
 
   const { data: agg } = useSWR<Aggregations>(aggUrl, fetcher, {
     keepPreviousData: true,
@@ -50,14 +54,17 @@ export function DashboardShell() {
                 Sanity API Logs
               </h1>
               <p className="font-mono text-xs text-zinc-500">
-                kn0uy6kh &middot; Jan 21 &ndash; Jan 28, 2026
                 {agg && (
-                  <span className="ml-2">
-                    &middot; {agg.totalFiltered.toLocaleString()} records
+                  <span>
+                    {agg.totalFiltered.toLocaleString()} records
                   </span>
                 )}
               </p>
             </div>
+            <FileManager
+              selectedFile={selectedFile}
+              onSelectFile={setSelectedFile}
+            />
           </div>
         </div>
       </header>
@@ -143,7 +150,7 @@ export function DashboardShell() {
 
         <QueryExplorer data={agg?.queryExplorer ?? null} />
 
-        <LogsTable queryString={queryString} />
+        <LogsTable queryString={queryString} fileKey={selectedFile} />
       </main>
     </div>
   );

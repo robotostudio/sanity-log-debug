@@ -8,13 +8,14 @@ import {
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const filters = parseFiltersFromParams(params);
+  const fileKey = params.get("fileKey") ?? undefined;
 
   const page = Number.parseInt(params.get("page") ?? "1", 10);
   const pageSize = Number.parseInt(params.get("pageSize") ?? "50", 10);
   const sortBy = params.get("sortBy") ?? "timestamp";
   const sortDir = params.get("sortDir") ?? "desc";
 
-  const allRecords = loadRecords();
+  const allRecords = await loadRecords(fileKey);
   const filtered = getFilteredRecords(allRecords, filters);
 
   // Sort

@@ -39,7 +39,7 @@ type SortColumn = (typeof SORT_COLUMNS)[number];
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-export function LogsTable({ queryString }: { queryString: string }) {
+export function LogsTable({ queryString, fileKey }: { queryString: string; fileKey?: string | null }) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortColumn>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -56,6 +56,7 @@ export function LogsTable({ queryString }: { queryString: string }) {
   params.set("pageSize", "50");
   params.set("sortBy", sortBy);
   params.set("sortDir", sortDir);
+  if (fileKey) params.set("fileKey", fileKey);
 
   const { data, isLoading } = useSWR<LogsResponse>(
     `/api/logs?${params.toString()}`,
