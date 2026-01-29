@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
   const severity = params.get("severity");
   if (severity) {
     const severities = severity.split(",");
-    conditions.push(inArray(logRecords.severity, severities));
+    conditions.push(inArray(logRecords.severityText, severities));
   }
 
   // Method filter
@@ -167,26 +167,59 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// Transform database record to the expected API format
+// Transform database record to the exact NDJSON format
 function transformToApiFormat(record: DbLogRecord) {
+  // Parse tags from JSON string if present
+  let tags: string[] = [];
+  if (record.tags) {
+    try {
+      tags = JSON.parse(record.tags);
+    } catch {
+      tags = [];
+    }
+  }
+
   return {
+    // Root level fields
     timestamp: record.timestamp.toISOString(),
     traceId: record.traceId ?? "",
-    severityText: record.severity ?? "INFO",
+    spanId: record.spanId ?? "",
+    severityText: record.severityText ?? "INFO",
+    severityNumber: record.severityNumber ?? 9,
+    // Body - exact NDJSON structure
     body: {
-      method: record.method ?? "",
-      status: record.status ?? 0,
       duration: record.duration ?? 0,
+      insertId: record.insertId ?? "",
+      method: record.method ?? "",
+      referer: record.referer ?? "",
+      remoteIp: record.remoteIp ?? "",
+      requestSize: record.requestSize ?? 0,
+      responseSize: record.responseSize ?? 0,
+      status: record.status ?? 0,
       url: record.url ?? "",
-      responseSize: 0, // Not stored in DB
+      userAgent: record.userAgent ?? "",
     },
+    // Attributes - exact NDJSON structure
     attributes: {
       sanity: {
-        endpoint: record.endpoint ?? "",
+        projectId: record.projectId ?? "",
+        dataset: record.dataset ?? "",
         domain: record.domain ?? "",
+        endpoint: record.endpoint ?? "",
+        groqQueryIdentifier: record.groqQueryId ?? "",
+        apiVersion: record.apiVersion ?? "",
+        tags,
         studioRequest: record.isStudioRequest === 1,
-        groqQueryIdentifier: record.groqQueryId ?? null,
-        apiVersion: "", // Not stored in DB
+      },
+    },
+    // Resource - exact NDJSON structure
+    resource: {
+      service: {
+        name: record.resourceServiceName ?? "Sanity.io",
+      },
+      sanity: {
+        type: record.resourceSanityType ?? "http_request",
+        version: record.resourceSanityVersion ?? "0.0.1",
       },
     },
   };

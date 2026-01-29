@@ -84,7 +84,7 @@ async function getSqlAggregations(
   }
 
   if (filters.severity?.length) {
-    conditions.push(inArray(logRecords.severity, filters.severity));
+    conditions.push(inArray(logRecords.severityText, filters.severity));
   }
 
   if (filters.method?.length) {
@@ -143,7 +143,7 @@ async function getSqlAggregations(
     db
       .select({
         hour: sql<string>`date_trunc('hour', ${logRecords.timestamp})::text`,
-        severity: logRecords.severity,
+        severity: logRecords.severityText,
         count: count(),
         avgDuration: avg(logRecords.duration),
       })
@@ -151,7 +151,7 @@ async function getSqlAggregations(
       .where(whereClause)
       .groupBy(
         sql`date_trunc('hour', ${logRecords.timestamp})`,
-        logRecords.severity,
+        logRecords.severityText,
       )
       .orderBy(sql`date_trunc('hour', ${logRecords.timestamp})`),
 

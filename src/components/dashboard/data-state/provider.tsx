@@ -49,10 +49,14 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       : `/api/logs/aggregations?${fileParam}`
     : null;
 
-  const { data, isLoading, error } = useSWR<Aggregations>(aggUrl, fetcher, {
-    keepPreviousData: true,
-    revalidateOnFocus: false,
-  });
+  const { data, isLoading, isValidating, error } = useSWR<Aggregations>(
+    aggUrl,
+    fetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+    },
+  );
 
   // Derive status from state
   const status: DataStatus = useMemo(() => {
@@ -82,14 +86,18 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     }
   }, [status, data, error]);
 
+  // isFiltering is true when we have data but are fetching new data (filter change)
+  const isFiltering = isValidating && status === "success";
+
   const state: DashboardState = useMemo(
     () => ({
       status,
       selectedFile,
       data: data ?? null,
       error: error?.message ?? null,
+      isFiltering,
     }),
-    [status, selectedFile, data, error],
+    [status, selectedFile, data, error, isFiltering],
   );
 
   const selectFile = useCallback((key: string | null) => {

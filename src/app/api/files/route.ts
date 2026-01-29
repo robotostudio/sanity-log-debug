@@ -1,20 +1,22 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { start } from "workflow/api";
-import { db, files } from "@/lib/db";
-import { deleteFile, getPresignedUploadUrl, listFiles } from "@/lib/r2";
+import { db, files, logRecords } from "@/lib/db";
+import { Logger } from "@/lib/logger";
+import { deleteFile, getPresignedUploadUrl } from "@/lib/r2";
 import { processLogFile } from "@/lib/workflow";
+
+const logger = new Logger("api/files");
 
 // GET - List all files from database (primary source of truth)
 // R2 files are deleted after processing, so DB is the reliable source
 export async function GET() {
   try {
-    // Get all files from database
+    logger.info("Listing files");
     const dbFiles = await db.query.files.findMany({
       orderBy: (files, { desc }) => [desc(files.uploadedAt)],
     });
 
-    // Map to expected format
     const filesList = dbFiles.map((file) => ({
       key: file.key,
       size: file.size,
@@ -25,9 +27,10 @@ export async function GET() {
       id: file.id,
     }));
 
+    logger.info("Files listed", { count: filesList.length });
     return NextResponse.json({ files: filesList });
   } catch (error) {
-    console.error("Failed to list files:", error);
+    logger.error("Failed to list files", error);
     return NextResponse.json(
       { error: "Failed to list files" },
       { status: 500 },
@@ -39,8 +42,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { filename } = await request.json();
+    logger.info("Getting presigned URL", { filename });
 
     if (!filename || !filename.endsWith(".ndjson")) {
+      logger.warn("Invalid filename", { filename });
       return NextResponse.json(
         { error: "Filename must end with .ndjson" },
         { status: 400 },
@@ -48,9 +53,10 @@ export async function POST(request: Request) {
     }
 
     const { url, key } = await getPresignedUploadUrl(filename);
+    logger.info("Presigned URL generated", { key });
     return NextResponse.json({ url, key });
   } catch (error) {
-    console.error("Failed to get upload URL:", error);
+    logger.error("Failed to get upload URL", error);
     return NextResponse.json(
       { error: "Failed to get upload URL" },
       { status: 500 },
@@ -62,15 +68,15 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const { key, filename, size } = await request.json();
+    logger.info("Confirming upload", { key, filename, size });
 
     if (!key) {
+      logger.warn("PUT called without key");
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    // Generate a unique ID for the file record
     const fileId = crypto.randomUUID();
 
-    // Create file record in database
     await db.insert(files).values({
       id: fileId,
       key,
@@ -78,9 +84,10 @@ export async function PUT(request: Request) {
       size: size || 0,
       processingStatus: "pending",
     });
+    logger.info("File record created", { fileId, key });
 
-    // Trigger background processing via workflow
     await start(processLogFile, [{ fileId, fileKey: key }]);
+    logger.info("Processing workflow started", { fileId });
 
     return NextResponse.json({
       success: true,
@@ -88,7 +95,7 @@ export async function PUT(request: Request) {
       processingStatus: "pending",
     });
   } catch (error) {
-    console.error("Failed to confirm upload:", error);
+    logger.error("Failed to confirm upload", error);
     return NextResponse.json(
       { error: "Failed to confirm upload" },
       { status: 500 },
@@ -96,26 +103,63 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE - Delete a file
+// DELETE - Delete a file and its associated log records
 export async function DELETE(request: Request) {
   try {
-    const { key } = await request.json();
+    const body = await request.json();
+    const { key } = body;
+
+    logger.info("DELETE request", { key });
 
     if (!key) {
+      logger.warn("DELETE called without key");
       return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    // Delete from R2
-    await deleteFile(key);
+    // Find the file record first
+    const fileRecord = await db.query.files.findFirst({
+      where: eq(files.key, key),
+    });
 
-    // Delete from database
+    logger.info("File record lookup", { found: !!fileRecord, fileId: fileRecord?.id });
+
+    if (!fileRecord) {
+      logger.warn("File not found", { key });
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
+
+    // Delete associated log records first (foreign key constraint)
+    logger.info("Deleting log records", { fileId: fileRecord.id });
+    await db.delete(logRecords).where(eq(logRecords.fileId, fileRecord.id));
+    logger.info("Log records deleted");
+
+    // Delete the file record from database
+    logger.info("Deleting file record", { key });
     await db.delete(files).where(eq(files.key, key));
+    logger.info("File record deleted");
 
+    // Try to delete from R2 (may already be deleted by workflow)
+    try {
+      await deleteFile(key);
+      logger.info("R2 file deleted");
+    } catch (r2Error) {
+      logger.warn("R2 delete skipped (may already be deleted)", r2Error);
+    }
+
+    logger.info("File deletion complete", { key });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to delete file:", error);
+    logger.error("Failed to delete file", error);
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : "Unknown",
+      stack: error instanceof Error ? error.stack : undefined,
+    };
     return NextResponse.json(
-      { error: "Failed to delete file" },
+      {
+        error: "Failed to delete file",
+        details: errorDetails,
+      },
       { status: 500 },
     );
   }

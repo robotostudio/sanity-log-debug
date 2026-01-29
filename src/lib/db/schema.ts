@@ -25,21 +25,40 @@ export const logRecords = pgTable(
     fileId: text("file_id")
       .notNull()
       .references(() => files.id),
+    // Root level fields
     timestamp: timestamp("timestamp").notNull(),
     traceId: text("trace_id"),
-    severity: text("severity"),
-    method: text("method"),
-    status: integer("status"),
+    spanId: text("span_id"),
+    severityText: text("severity_text"),
+    severityNumber: integer("severity_number"),
+    // Body fields
     duration: real("duration"),
+    insertId: text("insert_id"),
+    method: text("method"),
+    referer: text("referer"),
+    remoteIp: text("remote_ip"),
+    requestSize: integer("request_size"),
+    responseSize: integer("response_size"),
+    status: integer("status"),
     url: text("url"),
-    endpoint: text("endpoint"),
+    userAgent: text("user_agent"),
+    // attributes.sanity fields
+    projectId: text("project_id"),
+    dataset: text("dataset"),
     domain: text("domain"),
-    isStudioRequest: integer("is_studio_request"),
+    endpoint: text("endpoint"),
     groqQueryId: text("groq_query_id"),
+    apiVersion: text("api_version"),
+    tags: text("tags"), // JSON array stored as text
+    isStudioRequest: integer("is_studio_request"),
+    // resource fields
+    resourceServiceName: text("resource_service_name"),
+    resourceSanityType: text("resource_sanity_type"),
+    resourceSanityVersion: text("resource_sanity_version"),
   },
   (table) => [
     index("idx_file_timestamp").on(table.fileId, table.timestamp),
-    index("idx_file_severity").on(table.fileId, table.severity),
+    index("idx_file_severity").on(table.fileId, table.severityText),
     index("idx_file_status").on(table.fileId, table.status),
     index("idx_file_endpoint").on(table.fileId, table.endpoint),
   ],

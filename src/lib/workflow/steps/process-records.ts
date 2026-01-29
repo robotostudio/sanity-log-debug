@@ -19,19 +19,42 @@ export async function processRecords({
   for (let i = 0; i < lines.length; i += BATCH_SIZE) {
     const batch = lines.slice(i, i + BATCH_SIZE).map((line) => {
       const record = JSON.parse(line) as LogRecord;
+      const body = record.body;
+      const sanity = record.attributes?.sanity;
+      const resource = record.resource;
+
       return {
         fileId,
+        // Root level fields
         timestamp: new Date(record.timestamp),
         traceId: record.traceId,
-        severity: record.severityText,
-        method: record.body.method,
-        status: record.body.status,
-        duration: record.body.duration,
-        url: record.body.url,
-        endpoint: record.attributes.sanity.endpoint,
-        domain: record.attributes.sanity.domain,
-        isStudioRequest: record.attributes.sanity.studioRequest ? 1 : 0,
-        groqQueryId: record.attributes.sanity.groqQueryIdentifier,
+        spanId: record.spanId,
+        severityText: record.severityText,
+        severityNumber: record.severityNumber,
+        // Body fields
+        duration: body?.duration,
+        insertId: body?.insertId,
+        method: body?.method,
+        referer: body?.referer,
+        remoteIp: body?.remoteIp,
+        requestSize: body?.requestSize,
+        responseSize: body?.responseSize,
+        status: body?.status,
+        url: body?.url,
+        userAgent: body?.userAgent,
+        // attributes.sanity fields
+        projectId: sanity?.projectId,
+        dataset: sanity?.dataset,
+        domain: sanity?.domain,
+        endpoint: sanity?.endpoint,
+        groqQueryId: sanity?.groqQueryIdentifier,
+        apiVersion: sanity?.apiVersion,
+        tags: sanity?.tags ? JSON.stringify(sanity.tags) : null,
+        isStudioRequest: sanity?.studioRequest ? 1 : 0,
+        // resource fields
+        resourceServiceName: resource?.service?.name,
+        resourceSanityType: resource?.sanity?.type,
+        resourceSanityVersion: resource?.sanity?.version,
       };
     });
     await db.insert(logRecords).values(batch);

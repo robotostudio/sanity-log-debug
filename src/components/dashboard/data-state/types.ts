@@ -7,6 +7,7 @@ export interface DashboardState {
   selectedFile: string | null;
   data: Aggregations | null;
   error: string | null;
+  isFiltering: boolean;
 }
 
 export interface DashboardActions {

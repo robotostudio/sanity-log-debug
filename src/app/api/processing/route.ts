@@ -1,5 +1,6 @@
+import { desc, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { desc, eq, sql } from "drizzle-orm";
+
 import { db, files, logRecords } from "@/lib/db";
 
 export async function GET() {
@@ -14,7 +15,11 @@ export async function GET() {
       .groupBy(files.processingStatus),
 
     // Recent jobs with full details
-    db.select().from(files).orderBy(desc(files.uploadedAt)).limit(20),
+    db
+      .select()
+      .from(files)
+      .orderBy(desc(files.uploadedAt))
+      .limit(20),
 
     // Active jobs (pending or processing)
     db
@@ -42,7 +47,7 @@ export async function GET() {
       .groupBy(logRecords.fileId);
 
     progressMap = Object.fromEntries(
-      progressCounts.map((p) => [p.fileId, p.count])
+      progressCounts.map((p) => [p.fileId, p.count]),
     );
   }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown, Loader2, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -17,6 +16,10 @@ import {
 } from "@/components/ui/popover";
 import { formatDateForUrl, parseDateStringToDate } from "@/lib/date-utils";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { cn } from "@/lib/utils";
+import { useDashboard } from "./data-state";
+import { DatePresets } from "./filters/date-presets";
+import { FilterChip, FilterChipsContainer } from "./filters/filter-chip";
 
 const SEVERITY_OPTIONS = ["INFO", "WARN", "ERROR"];
 const METHOD_OPTIONS = ["GET", "POST", "OPTIONS", "HEAD", "PUT"];
@@ -53,47 +56,77 @@ const ENDPOINT_OPTIONS = [
 ];
 const DOMAIN_OPTIONS = ["api", "cdn", "apicdn"];
 
+interface MultiSelectFilterProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (val: string[]) => void;
+  searchable?: boolean;
+}
+
 function MultiSelectFilter({
   label,
   options,
   selected,
   onChange,
-}: {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (val: string[]) => void;
-}) {
+  searchable = false,
+}: MultiSelectFilterProps) {
+  const [search, setSearch] = useState("");
+  const filteredOptions =
+    searchable && search
+      ? options.filter((opt) =>
+          opt.toLowerCase().includes(search.toLowerCase()),
+        )
+      : options;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           size="sm"
-          className="h-8 border-zinc-700 bg-zinc-900 text-xs text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
+          className={cn(
+            "h-8 px-3 border-zinc-800 bg-zinc-900 text-xs text-zinc-300",
+            "hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-100",
+            "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
+            selected.length > 0 && "border-zinc-600 bg-zinc-800",
+          )}
         >
           {label}
           {selected.length > 0 && (
             <Badge
               variant="secondary"
-              className="ml-1.5 h-4 rounded-sm px-1 text-[10px] bg-zinc-700"
+              className="ml-1.5 h-4 rounded-sm px-1 text-[10px] bg-zinc-700 text-zinc-200"
             >
               {selected.length}
             </Badge>
           )}
+          <ChevronDown className="ml-1 h-3 w-3 text-zinc-500" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
         className="w-48 border-zinc-700 bg-zinc-900 p-2"
         align="start"
       >
-        <div className="max-h-64 space-y-1.5 overflow-y-auto">
-          {options.map((opt) => {
+        {searchable && (
+          <Input
+            placeholder={`Search ${label.toLowerCase()}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="mb-2 h-7 border-zinc-700 bg-zinc-800 text-xs placeholder:text-zinc-500"
+          />
+        )}
+        <div className="max-h-64 space-y-0.5 overflow-y-auto">
+          {filteredOptions.map((opt) => {
             const checked = selected.includes(opt);
             return (
               <div
                 key={opt}
-                className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs",
+                  "transition-colors hover:bg-zinc-800",
+                  checked ? "text-zinc-100" : "text-zinc-400",
+                )}
                 onClick={() => {
                   if (checked) {
                     onChange(selected.filter((s) => s !== opt));
@@ -117,7 +150,7 @@ function MultiSelectFilter({
               >
                 <Checkbox
                   checked={checked}
-                  className="h-3.5 w-3.5 pointer-events-none"
+                  className="h-3.5 w-3.5 pointer-events-none border-zinc-600 data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600"
                 />
                 <span className="font-mono">{opt}</span>
               </div>
@@ -128,7 +161,7 @@ function MultiSelectFilter({
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 h-6 w-full text-xs text-zinc-500"
+            className="mt-2 h-6 w-full text-xs text-zinc-500 hover:text-zinc-300"
             onClick={() => onChange([])}
           >
             Clear
@@ -140,8 +173,17 @@ function MultiSelectFilter({
 }
 
 export function FilterBar() {
-  const { filters, setFilters, clearAll, activeCount } = useFilters();
+  const { state } = useDashboard();
+  const {
+    filters,
+    setFilters,
+    clearAll,
+    activeCount,
+    activePreset,
+    applyDatePreset,
+  } = useFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
+  const isFiltering = state.isFiltering;
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -185,123 +227,236 @@ export function FilterBar() {
     ? dateRange.to
       ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`
       : format(dateRange.from, "MMM d")
-    : "Date range";
+    : "Custom";
+
+  // Build list of active filter chips
+  const hasActiveFilters = activeCount > 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Input
-        placeholder="Search URL or traceId..."
-        value={searchInput}
-        onChange={(e) => handleSearchChange(e.target.value)}
-        className="h-8 w-64 border-zinc-700 bg-zinc-900 text-xs text-zinc-300 placeholder:text-zinc-600"
-      />
+    <div className="space-y-3">
+      {/* Row 1: Search + Date Presets + Custom Date */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          {isFiltering ? (
+            <Loader2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 animate-spin" />
+          ) : (
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+          )}
+          <Input
+            placeholder="Search by URL or trace ID..."
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className={cn(
+              "h-8 w-[280px] pl-8 border-zinc-800 bg-zinc-900 text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
+              isFiltering && "opacity-70",
+            )}
+          />
+        </div>
 
-      <div className="flex items-center">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={`h-8 border-zinc-700 bg-zinc-900 text-xs hover:bg-zinc-800 hover:text-zinc-100 ${
-                dateRange?.from
-                  ? "rounded-r-none border-r-0 text-zinc-100"
-                  : "text-zinc-500"
-              }`}
-            >
-              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-              {dateLabel}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-auto border-zinc-700 bg-zinc-900 p-0"
-            align="start"
-          >
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={handleDateRangeSelect}
-              numberOfMonths={2}
-              defaultMonth={new Date(2026, 0)}
-            />
-          </PopoverContent>
-        </Popover>
-        {dateRange?.from && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 rounded-l-none border-zinc-700 bg-zinc-900 px-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-            onClick={() => setFilters({ dateFrom: "", dateTo: "" })}
-          >
-            &times;
-          </Button>
+        {/* Filtering indicator */}
+        {isFiltering && (
+          <span className="text-xs text-zinc-500 animate-pulse">
+            Filtering...
+          </span>
         )}
+
+        <div className="flex items-center gap-2 ml-auto">
+          <DatePresets
+            activePreset={activePreset}
+            onPresetSelect={applyDatePreset}
+          />
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 px-3 border-zinc-800 bg-zinc-900 text-xs",
+                  "hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-100",
+                  "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
+                  activePreset === "custom"
+                    ? "border-zinc-600 bg-zinc-800 text-zinc-100"
+                    : "text-zinc-400",
+                )}
+              >
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {activePreset === "custom" ? dateLabel : "Custom"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto border-zinc-700 bg-zinc-900 p-0"
+              align="end"
+            >
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={handleDateRangeSelect}
+                numberOfMonths={2}
+                defaultMonth={new Date(2026, 0)}
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
-      <MultiSelectFilter
-        label="Severity"
-        options={SEVERITY_OPTIONS}
-        selected={filters.severity}
-        onChange={(val) => setFilters({ severity: val })}
-      />
+      {/* Row 2: Multi-select filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <MultiSelectFilter
+          label="Method"
+          options={METHOD_OPTIONS}
+          selected={filters.method}
+          onChange={(val) => setFilters({ method: val })}
+        />
 
-      <MultiSelectFilter
-        label="Method"
-        options={METHOD_OPTIONS}
-        selected={filters.method}
-        onChange={(val) => setFilters({ method: val })}
-      />
+        <MultiSelectFilter
+          label="Status"
+          options={STATUS_OPTIONS}
+          selected={filters.status}
+          onChange={(val) => setFilters({ status: val })}
+          searchable
+        />
 
-      <MultiSelectFilter
-        label="Status"
-        options={STATUS_OPTIONS}
-        selected={filters.status}
-        onChange={(val) => setFilters({ status: val })}
-      />
+        <MultiSelectFilter
+          label="Endpoint"
+          options={ENDPOINT_OPTIONS}
+          selected={filters.endpoint}
+          onChange={(val) => setFilters({ endpoint: val })}
+          searchable
+        />
 
-      <MultiSelectFilter
-        label="Endpoint"
-        options={ENDPOINT_OPTIONS}
-        selected={filters.endpoint}
-        onChange={(val) => setFilters({ endpoint: val })}
-      />
+        <MultiSelectFilter
+          label="Domain"
+          options={DOMAIN_OPTIONS}
+          selected={filters.domain}
+          onChange={(val) => setFilters({ domain: val })}
+        />
 
-      <MultiSelectFilter
-        label="Domain"
-        options={DOMAIN_OPTIONS}
-        selected={filters.domain}
-        onChange={(val) => setFilters({ domain: val })}
-      />
+        <MultiSelectFilter
+          label="Severity"
+          options={SEVERITY_OPTIONS}
+          selected={filters.severity}
+          onChange={(val) => setFilters({ severity: val })}
+        />
 
-      <div className="flex items-center gap-1.5">
-        <Label className="text-xs text-zinc-500">Studio:</Label>
-        <div className="flex gap-0.5">
+        {/* Studio toggle */}
+        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-zinc-800">
+          <span className="text-xs text-zinc-500 mr-1">Studio:</span>
           {(["all", "true", "false"] as const).map((opt) => (
-            <Button
+            <button
+              type="button"
               key={opt}
-              variant={filters.studio === opt ? "secondary" : "ghost"}
-              size="sm"
-              className={`h-7 px-2 text-xs ${
+              className={cn(
+                "h-7 px-2 rounded text-xs font-medium transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
                 filters.studio === opt
-                  ? "bg-zinc-700 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50",
+              )}
               onClick={() => setFilters({ studio: opt })}
             >
               {opt === "all" ? "All" : opt === "true" ? "Yes" : "No"}
-            </Button>
+            </button>
           ))}
         </div>
       </div>
 
-      {activeCount > 0 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-xs text-zinc-500 hover:text-zinc-300"
-          onClick={clearAll}
+      {/* Row 3: Active filter chips */}
+      {hasActiveFilters && (
+        <FilterChipsContainer
+          showClearAll={activeCount > 1}
+          onClearAll={clearAll}
         >
-          Clear all ({activeCount})
-        </Button>
+          {/* Date chip */}
+          {(filters.dateFrom || filters.dateTo) && (
+            <FilterChip
+              label={
+                activePreset && activePreset !== "custom"
+                  ? activePreset
+                  : dateLabel
+              }
+              onRemove={() => setFilters({ dateFrom: "", dateTo: "" })}
+            />
+          )}
+
+          {/* Search chip */}
+          {filters.search && (
+            <FilterChip
+              label="Search"
+              value={
+                filters.search.length > 20
+                  ? `${filters.search.slice(0, 20)}...`
+                  : filters.search
+              }
+              onRemove={() => {
+                setSearchInput("");
+                setFilters({ search: "" });
+              }}
+            />
+          )}
+
+          {/* Method chips */}
+          {filters.method.length > 0 && (
+            <FilterChip
+              label="Method"
+              value={filters.method.join(", ")}
+              onRemove={() => setFilters({ method: [] })}
+            />
+          )}
+
+          {/* Status chips */}
+          {filters.status.length > 0 && (
+            <FilterChip
+              label="Status"
+              value={
+                filters.status.length > 3
+                  ? `${filters.status.slice(0, 3).join(", ")}...`
+                  : filters.status.join(", ")
+              }
+              onRemove={() => setFilters({ status: [] })}
+            />
+          )}
+
+          {/* Endpoint chips */}
+          {filters.endpoint.length > 0 && (
+            <FilterChip
+              label="Endpoint"
+              value={
+                filters.endpoint.length > 2
+                  ? `${filters.endpoint.slice(0, 2).join(", ")}...`
+                  : filters.endpoint.join(", ")
+              }
+              onRemove={() => setFilters({ endpoint: [] })}
+            />
+          )}
+
+          {/* Domain chips */}
+          {filters.domain.length > 0 && (
+            <FilterChip
+              label="Domain"
+              value={filters.domain.join(", ")}
+              onRemove={() => setFilters({ domain: [] })}
+            />
+          )}
+
+          {/* Severity chips */}
+          {filters.severity.length > 0 && (
+            <FilterChip
+              label="Severity"
+              value={filters.severity.join(", ")}
+              onRemove={() => setFilters({ severity: [] })}
+            />
+          )}
+
+          {/* Studio chip */}
+          {filters.studio !== "all" && (
+            <FilterChip
+              label="Studio"
+              value={filters.studio === "true" ? "Yes" : "No"}
+              onRemove={() => setFilters({ studio: "all" })}
+            />
+          )}
+        </FilterChipsContainer>
       )}
     </div>
   );
