@@ -60,9 +60,7 @@ function ActiveJobItem({ job }: { job: File }) {
         className={isProcessing ? "animate-pulse" : ""}
       />
       <p className="text-xs text-muted-foreground">
-        {isProcessing
-          ? "Processing records..."
-          : "Waiting to start..."}
+        {isProcessing ? "Processing records..." : "Waiting to start..."}
       </p>
     </div>
   );

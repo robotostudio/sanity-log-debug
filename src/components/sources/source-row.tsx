@@ -62,7 +62,9 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
 
         {/* Name */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-100">{fileName}</p>
+          <p className="truncate text-sm font-medium text-zinc-100">
+            {fileName}
+          </p>
           <p className="text-xs text-zinc-500">
             {formatDate(source.lastModified)}
           </p>
@@ -122,7 +124,9 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
               {isReady && (
                 <>
                   <DropdownMenuItem asChild>
-                    <Link href={`/analytics?file=${encodeURIComponent(source.key)}`}>
+                    <Link
+                      href={`/analytics?file=${encodeURIComponent(source.key)}`}
+                    >
                       <BarChart3 className="mr-2 h-4 w-4" />
                       View Analytics
                     </Link>
@@ -147,8 +151,8 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete source</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &quot;{fileName}&quot;? This action cannot
-              be undone.
+              Are you sure you want to delete &quot;{fileName}&quot;? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -206,7 +210,7 @@ function StatusBadge({ status }: { status?: ProcessingStatus }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        className
+        className,
       )}
     >
       {icon}

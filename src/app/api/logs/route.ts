@@ -1,4 +1,15 @@
-import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { isValidUrlDate, parseDateFromUrl } from "@/lib/date-utils";
 import { db, files, logRecords } from "@/lib/db";
@@ -9,10 +20,7 @@ export async function GET(request: NextRequest) {
   const fileKey = params.get("fileKey");
 
   if (!fileKey) {
-    return NextResponse.json(
-      { error: "fileKey is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
   }
 
   // Get the file from database
@@ -21,16 +29,13 @@ export async function GET(request: NextRequest) {
   });
 
   if (!dbFile) {
-    return NextResponse.json(
-      { error: "File not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
   if (dbFile.processingStatus !== "ready") {
     return NextResponse.json(
       { error: "File is still processing", status: dbFile.processingStatus },
-      { status: 202 }
+      { status: 202 },
     );
   }
 
@@ -113,8 +118,8 @@ export async function GET(request: NextRequest) {
     conditions.push(
       or(
         ilike(logRecords.url, `%${search}%`),
-        ilike(logRecords.traceId, `%${search}%`)
-      )!
+        ilike(logRecords.traceId, `%${search}%`),
+      )!,
     );
   }
 
@@ -135,13 +140,14 @@ export async function GET(request: NextRequest) {
   const total = countResult?.count ?? 0;
 
   // Determine sort column and direction
-  const sortColumn = {
-    timestamp: logRecords.timestamp,
-    duration: logRecords.duration,
-    status: logRecords.status,
-    method: logRecords.method,
-    endpoint: logRecords.endpoint,
-  }[sortBy] ?? logRecords.timestamp;
+  const sortColumn =
+    {
+      timestamp: logRecords.timestamp,
+      duration: logRecords.duration,
+      status: logRecords.status,
+      method: logRecords.method,
+      endpoint: logRecords.endpoint,
+    }[sortBy] ?? logRecords.timestamp;
 
   const orderByClause = sortDir === "asc" ? asc(sortColumn) : desc(sortColumn);
 

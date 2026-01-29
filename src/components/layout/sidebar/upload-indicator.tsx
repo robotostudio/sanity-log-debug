@@ -18,7 +18,7 @@ export function UploadIndicator() {
       <div
         className={cn(
           "flex items-center gap-3 rounded-md bg-zinc-900 px-3 py-2",
-          isCollapsed && "justify-center px-2"
+          isCollapsed && "justify-center px-2",
         )}
       >
         <StatusIcon status={uploadProgress.status} />
@@ -49,7 +49,9 @@ export function UploadIndicator() {
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case "uploading":
-      return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-400" />;
+      return (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-zinc-400" />
+      );
     case "complete":
       return <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />;
     case "error":

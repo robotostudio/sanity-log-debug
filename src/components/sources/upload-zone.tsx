@@ -13,7 +13,11 @@ interface UploadZoneProps {
   progress: UploadProgress;
 }
 
-export function UploadZone({ onUpload, isUploading, progress }: UploadZoneProps) {
+export function UploadZone({
+  onUpload,
+  isUploading,
+  progress,
+}: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +44,7 @@ export function UploadZone({ onUpload, isUploading, progress }: UploadZoneProps)
         await onUpload(file);
       }
     },
-    [onUpload]
+    [onUpload],
   );
 
   const handleFileSelect = useCallback(
@@ -54,7 +58,7 @@ export function UploadZone({ onUpload, isUploading, progress }: UploadZoneProps)
         inputRef.current.value = "";
       }
     },
-    [onUpload]
+    [onUpload],
   );
 
   const handleClick = useCallback(() => {
@@ -103,7 +107,7 @@ export function UploadZone({ onUpload, isUploading, progress }: UploadZoneProps)
         "group relative cursor-pointer rounded-md border-2 border-dashed p-12 text-center transition-colors",
         isDragOver
           ? "border-zinc-500 bg-zinc-800"
-          : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+          : "border-zinc-800 bg-zinc-900 hover:border-zinc-700",
       )}
     >
       <input
@@ -121,7 +125,7 @@ export function UploadZone({ onUpload, isUploading, progress }: UploadZoneProps)
             "rounded-full p-4 transition-colors",
             isDragOver
               ? "bg-zinc-700/50 text-zinc-300"
-              : "bg-zinc-800/50 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-zinc-400"
+              : "bg-zinc-800/50 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-zinc-400",
           )}
         >
           <Upload className="h-8 w-8" />

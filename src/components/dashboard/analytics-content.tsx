@@ -33,9 +33,10 @@ export function AnalyticsContent() {
   }
 
   const recordCount = state.data?.totalFiltered ?? 0;
-  const description = state.status === "loading"
-    ? "Loading data..."
-    : `${recordCount.toLocaleString()} records`;
+  const description =
+    state.status === "loading"
+      ? "Loading data..."
+      : `${recordCount.toLocaleString()} records`;
 
   return (
     <div className="space-y-4">

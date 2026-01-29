@@ -121,7 +121,10 @@ export async function DELETE(request: Request) {
       where: eq(files.key, key),
     });
 
-    logger.info("File record lookup", { found: !!fileRecord, fileId: fileRecord?.id });
+    logger.info("File record lookup", {
+      found: !!fileRecord,
+      fileId: fileRecord?.id,
+    });
 
     if (!fileRecord) {
       logger.warn("File not found", { key });

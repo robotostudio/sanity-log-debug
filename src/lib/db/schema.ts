@@ -16,6 +16,7 @@ export const files = pgTable("files", {
   processingStatus: text("processing_status").notNull().default("pending"),
   recordCount: integer("record_count"),
   processedAt: timestamp("processed_at"),
+  workflowRunId: text("workflow_run_id"),
 });
 
 export const logRecords = pgTable(

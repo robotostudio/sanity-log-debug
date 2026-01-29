@@ -45,10 +45,7 @@ function SourceListSkeleton() {
   return (
     <div className="space-y-2">
       {[...Array(3)].map((_, i) => (
-        <div
-          key={i}
-          className="h-16 rounded-lg bg-zinc-800/50 animate-pulse"
-        />
+        <div key={i} className="h-16 rounded-lg bg-zinc-800/50 animate-pulse" />
       ))}
     </div>
   );

@@ -14,7 +14,13 @@ function Logo({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       className={cn("h-6 w-6", className)}
     >
-      <rect width="32" height="32" rx="2" fill="currentColor" className="text-zinc-100" />
+      <rect
+        width="32"
+        height="32"
+        rx="2"
+        fill="currentColor"
+        className="text-zinc-100"
+      />
       <rect x="8" y="9" width="8" height="14" rx="1" fill="#18181B" />
       <rect x="18" y="9" width="6" height="8" rx="1" fill="#18181B" />
     </svg>
@@ -27,7 +33,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "group/sidebar flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-[width] duration-200"
+        "group/sidebar flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-[width] duration-200",
       )}
       style={{ width: isCollapsed ? "64px" : "240px" }}
     >
@@ -54,7 +60,7 @@ export function Sidebar() {
           onClick={toggleCollapsed}
           className={cn(
             "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200",
-            isCollapsed && "justify-center px-2"
+            isCollapsed && "justify-center px-2",
           )}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

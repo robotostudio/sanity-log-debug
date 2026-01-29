@@ -17,10 +17,7 @@ export async function GET(request: NextRequest) {
   const fileKey = params.get("fileKey");
 
   if (!fileKey) {
-    return NextResponse.json(
-      { error: "fileKey is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
   }
 
   // Get the file from database
@@ -29,16 +26,13 @@ export async function GET(request: NextRequest) {
   });
 
   if (!dbFile) {
-    return NextResponse.json(
-      { error: "File not found" },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 
   if (dbFile.processingStatus !== "ready") {
     return NextResponse.json(
       { error: "File is still processing", status: dbFile.processingStatus },
-      { status: 202 }
+      { status: 202 },
     );
   }
 

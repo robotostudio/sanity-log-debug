@@ -65,12 +65,8 @@ export function SidebarProvider({
       toggleCollapsed,
       setCollapsed,
     }),
-    [isCollapsed, toggleCollapsed, setCollapsed]
+    [isCollapsed, toggleCollapsed, setCollapsed],
   );
 
-  return (
-    <SidebarContext value={value}>
-      {children}
-    </SidebarContext>
-  );
+  return <SidebarContext value={value}>{children}</SidebarContext>;
 }

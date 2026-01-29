@@ -39,7 +39,7 @@ export function PipelineContent() {
   const { data, error, isLoading } = useSWR<ProcessingData>(
     "/api/processing",
     fetcher,
-    { refreshInterval: 2000 }
+    { refreshInterval: 2000 },
   );
 
   if (error) {
@@ -109,9 +109,7 @@ export function PipelineContent() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-zinc-300" />
             </div>
-            <h2 className="text-sm font-medium text-zinc-400">
-              Active Jobs
-            </h2>
+            <h2 className="text-sm font-medium text-zinc-400">Active Jobs</h2>
           </div>
           <div className="space-y-2">
             {activeJobs.map((job) => (
@@ -200,7 +198,7 @@ function MetricCard({
           className={cn(
             "h-4 w-4 text-zinc-600",
             pulse && "animate-pulse text-zinc-400",
-            accent && accentStyles[accent]
+            accent && accentStyles[accent],
           )}
         />
       </div>
@@ -210,7 +208,7 @@ function MetricCard({
         <p
           className={cn(
             "mt-2 text-2xl font-semibold tabular-nums text-zinc-100",
-            accent && accentStyles[accent]
+            accent && accentStyles[accent],
           )}
         >
           {value.toLocaleString()}
@@ -383,7 +381,7 @@ function StatusBadge({ status }: { status: string }) {
     <span
       className={cn(
         "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
-        className
+        className,
       )}
     >
       {label}

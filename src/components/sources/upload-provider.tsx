@@ -26,7 +26,7 @@ const initialUploadProgress: UploadProgress = {
 function uploadWithProgress(
   url: string,
   file: File,
-  onProgress: (loaded: number, total: number) => void
+  onProgress: (loaded: number, total: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -76,8 +76,9 @@ interface UploadProviderProps {
 
 export function UploadProvider({ children }: UploadProviderProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] =
-    useState<UploadProgress>(initialUploadProgress);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>(
+    initialUploadProgress,
+  );
 
   const uploadFile = useCallback(async (file: File) => {
     if (!isValidNdjsonFile(file)) {
@@ -169,7 +170,7 @@ export function UploadProvider({ children }: UploadProviderProps) {
       uploadProgress,
       uploadFile,
     }),
-    [isUploading, uploadProgress, uploadFile]
+    [isUploading, uploadProgress, uploadFile],
   );
 
   return <UploadContext value={value}>{children}</UploadContext>;

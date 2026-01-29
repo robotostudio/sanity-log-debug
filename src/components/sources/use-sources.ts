@@ -16,14 +16,14 @@ export function useSources() {
 
   const { data, isLoading, error } = useSWR<{ files: Source[] }>(
     FILES_API_ENDPOINT,
-    fetcher
+    fetcher,
   );
 
   // Determine if we should poll based on whether any sources are processing
   const hasProcessingSources = useMemo(() => {
     return data?.files?.some(
       (f) =>
-        f.processingStatus === "pending" || f.processingStatus === "processing"
+        f.processingStatus === "pending" || f.processingStatus === "processing",
     );
   }, [data?.files]);
 
@@ -34,7 +34,7 @@ export function useSources() {
     {
       refreshInterval: POLL_INTERVAL_MS,
       dedupingInterval: POLL_INTERVAL_MS / 2,
-    }
+    },
   );
 
   const deleteSource = useCallback(async (key: string) => {
