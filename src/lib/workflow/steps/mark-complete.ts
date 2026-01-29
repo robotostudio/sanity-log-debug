@@ -2,6 +2,9 @@
 
 import { eq } from "drizzle-orm";
 import { db, files } from "@/lib/db";
+import { Logger } from "@/lib/logger";
+
+const logger = new Logger("workflow/mark-complete");
 
 export async function markComplete({
   fileId,
@@ -10,6 +13,8 @@ export async function markComplete({
   fileId: string;
   recordCount: number;
 }) {
+  logger.info("Marking file as complete", { fileId, recordCount });
+
   await db
     .update(files)
     .set({
@@ -18,4 +23,6 @@ export async function markComplete({
       recordCount,
     })
     .where(eq(files.id, fileId));
+
+  logger.info("File marked as complete", { fileId, recordCount });
 }
