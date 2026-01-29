@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
-import { cn } from "@/lib/utils";
 import type { File } from "@/lib/db/schema";
+import { cn } from "@/lib/utils";
 
 interface ProcessingStats {
   pending?: number;
@@ -405,7 +405,7 @@ function formatFileSize(bytes: number): string {
   const k = 1024;
   const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
 }
 
 function formatDate(date: Date | string | null): string {

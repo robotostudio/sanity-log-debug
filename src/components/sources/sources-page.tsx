@@ -1,8 +1,8 @@
 "use client";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { UploadZone } from "./upload-zone";
 import { SourceList } from "./source-list";
+import { UploadZone } from "./upload-zone";
 import { useSources } from "./use-sources";
 
 export function SourcesPage() {

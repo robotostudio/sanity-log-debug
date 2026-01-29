@@ -77,21 +77,26 @@ export async function PUT(request: Request) {
 
     const fileId = crypto.randomUUID();
 
+    // Start the workflow and get the run handle
+    const workflowRun = await start(processLogFile, [{ fileId, fileKey: key }]);
+    const workflowRunId = workflowRun.runId;
+    logger.info("Processing workflow started", { fileId, workflowRunId });
+
+    // Create file record with workflow run ID
     await db.insert(files).values({
       id: fileId,
       key,
       filename: filename || key.split("/").pop() || key,
       size: size || 0,
       processingStatus: "pending",
+      workflowRunId,
     });
-    logger.info("File record created", { fileId, key });
-
-    await start(processLogFile, [{ fileId, fileKey: key }]);
-    logger.info("Processing workflow started", { fileId });
+    logger.info("File record created", { fileId, key, workflowRunId });
 
     return NextResponse.json({
       success: true,
       fileId,
+      workflowRunId,
       processingStatus: "pending",
     });
   } catch (error) {

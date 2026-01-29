@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Upload, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useCallback, useRef, useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import type { UploadProgress } from "./types";
 import { formatBytes } from "./utils";
 

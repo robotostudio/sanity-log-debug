@@ -2,8 +2,8 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useSidebar } from "./sidebar-provider";
 import { SidebarNav } from "./sidebar-nav";
+import { useSidebar } from "./sidebar-provider";
 import { UploadIndicator } from "./upload-indicator";
 
 function Logo({ className }: { className?: string }) {
@@ -78,6 +78,6 @@ export function Sidebar() {
   );
 }
 
-export { SidebarProvider, useSidebar } from "./sidebar-provider";
 export { navItems } from "./nav-config";
+export { SidebarProvider, useSidebar } from "./sidebar-provider";
 export type { NavItem, SidebarContextValue } from "./types";

@@ -2,12 +2,12 @@
 
 import {
   createContext,
+  type ReactNode,
   use,
   useCallback,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
 import type { SidebarContextValue } from "./types";
 

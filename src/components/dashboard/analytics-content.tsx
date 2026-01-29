@@ -7,6 +7,7 @@ import {
   EndpointDistribution,
   StatusDistribution,
 } from "./distribution-charts";
+import { EmptyAnalytics } from "./empty-analytics";
 import { FilterBar } from "./filter-bar";
 import { KpiCards } from "./kpi-cards";
 import { LatencyHistogram } from "./latency-histogram";
@@ -14,7 +15,6 @@ import { LogsTable } from "./logs-table";
 import { QueryExplorer } from "./query-explorer";
 import { SlowestRequests } from "./slowest-requests";
 import { TimeSeriesChart } from "./time-series-chart";
-import { EmptyAnalytics } from "./empty-analytics";
 
 export function AnalyticsContent() {
   const { state } = useDashboard();

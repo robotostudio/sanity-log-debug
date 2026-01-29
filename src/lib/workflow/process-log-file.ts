@@ -1,9 +1,9 @@
 "use workflow";
 
+import { deleteFromR2 } from "./steps/delete-from-r2";
+import { markComplete } from "./steps/mark-complete";
 import { markProcessing } from "./steps/mark-processing";
 import { processRecords } from "./steps/process-records";
-import { markComplete } from "./steps/mark-complete";
-import { deleteFromR2 } from "./steps/delete-from-r2";
 
 export interface ProcessLogFileInput {
   fileId: string;

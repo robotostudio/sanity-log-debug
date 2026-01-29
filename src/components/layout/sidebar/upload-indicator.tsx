@@ -1,8 +1,8 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CheckCircle2, Loader2, Upload, XCircle } from "lucide-react";
 import { useUpload } from "@/components/sources/upload-provider";
+import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-provider";
 
 export function UploadIndicator() {

@@ -1,25 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import {
+  AlertCircle,
   BarChart3,
+  CheckCircle2,
   Clock,
   Cog,
-  CheckCircle2,
-  AlertCircle,
+  FileText,
   MoreHorizontal,
   Trash2,
-  FileText,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,8 +22,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Source, ProcessingStatus } from "./types";
+import type { ProcessingStatus, Source } from "./types";
 import { formatBytes, formatDate, getFileName } from "./utils";
 
 interface SourceRowProps {

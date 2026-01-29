@@ -1,8 +1,8 @@
 "use client";
 
-import type { Source } from "./types";
-import { SourceRow } from "./source-row";
 import { EmptyState } from "./empty-state";
+import { SourceRow } from "./source-row";
+import type { Source } from "./types";
 
 interface SourceListProps {
   sources: Source[];

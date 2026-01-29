@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { DashboardProvider } from "@/components/dashboard/data-state";
 import { AnalyticsContent } from "@/components/dashboard/analytics-content";
+import { DashboardProvider } from "@/components/dashboard/data-state";
 
 export const metadata = {
   title: "Analytics | Sanity API Logs",
