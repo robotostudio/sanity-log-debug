@@ -76,6 +76,27 @@ export async function getFileContent(key: string): Promise<string> {
   return body;
 }
 
+/**
+ * Returns a ReadableStream for streaming large files line by line
+ */
+export async function getFileStream(
+  key: string,
+): Promise<ReadableStream<Uint8Array>> {
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+  });
+
+  const response = await r2Client.send(command);
+  const stream = response.Body?.transformToWebStream();
+
+  if (!stream) {
+    throw new Error(`Failed to get stream for file: ${key}`);
+  }
+
+  return stream;
+}
+
 export async function deleteFile(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,

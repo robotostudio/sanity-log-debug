@@ -1,6 +1,7 @@
 import { LATENCY_BUCKETS } from "./constants";
 import { isValidUrlDate, parseDateFromUrl } from "./date-utils";
-import { getFileContent, listFiles } from "./r2";
+import { Logger } from "./logger";
+import { getFileStream, listFiles } from "./r2";
 import type {
   Aggregations,
   DistributionItem,
@@ -9,6 +10,51 @@ import type {
   LogRecord,
   TimeSeriesBucket,
 } from "./types";
+
+const logger = new Logger("lib/data");
+
+/**
+ * Async generator that reads lines from a ReadableStream using the reader pattern.
+ * Handles partial lines across chunks and yields complete lines one at a time.
+ */
+async function* readLines(
+  stream: ReadableStream<Uint8Array>,
+): AsyncGenerator<{ line: string; index: number }> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let lineIndex = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        // Yield any remaining content as the last line
+        if (buffer.trim()) {
+          yield { line: buffer, index: lineIndex };
+        }
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+
+      // Process complete lines from buffer
+      const parts = buffer.split("\n");
+      // Keep the last part as buffer (may be incomplete)
+      buffer = parts.pop() ?? "";
+
+      for (const line of parts) {
+        if (line.trim()) {
+          yield { line, index: lineIndex };
+        }
+        lineIndex++;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
 
 // Cache with file key tracking
 let cachedRecords: LogRecord[] | null = null;
@@ -35,9 +81,38 @@ export async function loadRecords(fileKey?: string): Promise<LogRecord[]> {
     targetKey = files[0].key;
   }
 
-  const content = await getFileContent(targetKey);
-  const lines = content.trim().split("\n");
-  cachedRecords = lines.map((line) => JSON.parse(line) as LogRecord);
+  // Stream file and parse lines using reader pattern
+  const stream = await getFileStream(targetKey);
+  const parsedRecords: LogRecord[] = [];
+  let skippedCount = 0;
+  let totalLines = 0;
+
+  for await (const { line, index } of readLines(stream)) {
+    totalLines++;
+
+    try {
+      const record = JSON.parse(line) as LogRecord;
+      parsedRecords.push(record);
+    } catch (error) {
+      skippedCount++;
+      const preview = line.length > 100 ? `${line.slice(0, 100)}...` : line;
+      logger.warn("Skipping malformed NDJSON line", {
+        lineIndex: index,
+        preview,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  if (skippedCount > 0) {
+    logger.warn("NDJSON parsing complete with skipped lines", {
+      totalLines,
+      parsedRecords: parsedRecords.length,
+      skippedLines: skippedCount,
+    });
+  }
+
+  cachedRecords = parsedRecords;
   cachedFileKey = targetKey;
 
   return cachedRecords;

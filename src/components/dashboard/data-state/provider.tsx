@@ -66,9 +66,8 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
 
   // Handle toast notifications without useEffect - compare with previous status
   if (status !== prevStatusRef.current) {
-    if (status === "loading") {
-      loadingToastRef.current = toast.loading("Loading dashboard data...");
-    } else if (loadingToastRef.current) {
+    // Dismiss any existing loading toast first
+    if (loadingToastRef.current && status !== "loading") {
       if (status === "success" && data) {
         toast.success("Dashboard loaded", {
           id: loadingToastRef.current,
@@ -79,9 +78,18 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
           id: loadingToastRef.current,
           description: error?.message ?? String(error) ?? "An error occurred",
         });
+      } else {
+        // Dismiss without replacement (e.g., status became "empty")
+        toast.dismiss(loadingToastRef.current);
       }
       loadingToastRef.current = null;
     }
+
+    // Show new loading toast if entering loading state
+    if (status === "loading") {
+      loadingToastRef.current = toast.loading("Loading dashboard data...");
+    }
+
     prevStatusRef.current = status;
   }
 
