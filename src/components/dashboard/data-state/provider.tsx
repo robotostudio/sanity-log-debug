@@ -1,6 +1,14 @@
 "use client";
 
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import useSWR from "swr";
 import { useFilters } from "@/lib/hooks/use-filters";
 import type { Aggregations } from "@/lib/types";
@@ -16,6 +24,7 @@ interface DashboardProviderProps {
 export function DashboardProvider({ children }: DashboardProviderProps) {
   const { queryString } = useFilters();
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const loadingToastRef = useRef<string | number | null>(null);
 
   const fileParam = selectedFile
     ? `fileKey=${encodeURIComponent(selectedFile)}`
@@ -42,6 +51,26 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     if (isLoading && !data) return "loading";
     return "success";
   }, [selectedFile, error, isLoading, data]);
+
+  // Toast notifications for state changes
+  useEffect(() => {
+    if (status === "loading") {
+      loadingToastRef.current = toast.loading("Loading dashboard data...");
+    } else if (loadingToastRef.current) {
+      if (status === "success" && data) {
+        toast.success("Dashboard loaded", {
+          id: loadingToastRef.current,
+          description: `${data.kpis.totalRequests.toLocaleString()} requests loaded`,
+        });
+      } else if (status === "error") {
+        toast.error("Failed to load data", {
+          id: loadingToastRef.current,
+          description: error?.message ?? "An error occurred",
+        });
+      }
+      loadingToastRef.current = null;
+    }
+  }, [status, data, error]);
 
   const state: DashboardState = useMemo(
     () => ({

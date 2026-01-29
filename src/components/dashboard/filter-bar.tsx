@@ -15,6 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { formatDateForUrl, parseDateStringToDate } from "@/lib/date-utils";
 import { useFilters } from "@/lib/hooks/use-filters";
 
 const SEVERITY_OPTIONS = ["INFO", "WARN", "ERROR"];
@@ -164,31 +165,19 @@ export function FilterBar() {
   const dateRange: DateRange | undefined =
     filters.dateFrom || filters.dateTo
       ? {
-          from: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
-          to: filters.dateTo ? new Date(filters.dateTo) : undefined,
+          from: filters.dateFrom
+            ? parseDateStringToDate(filters.dateFrom)
+            : undefined,
+          to: filters.dateTo
+            ? parseDateStringToDate(filters.dateTo)
+            : undefined,
         }
       : undefined;
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
     setFilters({
-      dateFrom: range?.from
-        ? new Date(
-            range.from.getFullYear(),
-            range.from.getMonth(),
-            range.from.getDate(),
-          ).toISOString()
-        : "",
-      dateTo: range?.to
-        ? new Date(
-            range.to.getFullYear(),
-            range.to.getMonth(),
-            range.to.getDate(),
-            23,
-            59,
-            59,
-            999,
-          ).toISOString()
-        : "",
+      dateFrom: range?.from ? formatDateForUrl(range.from) : "",
+      dateTo: range?.to ? formatDateForUrl(range.to) : "",
     });
   };
 
@@ -207,44 +196,46 @@ export function FilterBar() {
         className="h-8 w-64 border-zinc-700 bg-zinc-900 text-xs text-zinc-300 placeholder:text-zinc-600"
       />
 
-      <Popover>
-        <PopoverTrigger asChild>
+      <div className="flex items-center">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`h-8 border-zinc-700 bg-zinc-900 text-xs hover:bg-zinc-800 hover:text-zinc-100 ${
+                dateRange?.from
+                  ? "rounded-r-none border-r-0 text-zinc-100"
+                  : "text-zinc-500"
+              }`}
+            >
+              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+              {dateLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto border-zinc-700 bg-zinc-900 p-0"
+            align="start"
+          >
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={handleDateRangeSelect}
+              numberOfMonths={2}
+              defaultMonth={new Date(2026, 0)}
+            />
+          </PopoverContent>
+        </Popover>
+        {dateRange?.from && (
           <Button
             variant="outline"
             size="sm"
-            className={`h-8 border-zinc-700 bg-zinc-900 text-xs hover:bg-zinc-800 hover:text-zinc-100 ${
-              dateRange?.from ? "text-zinc-100" : "text-zinc-500"
-            }`}
+            className="h-8 rounded-l-none border-zinc-700 bg-zinc-900 px-2 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+            onClick={() => setFilters({ dateFrom: "", dateTo: "" })}
           >
-            <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-            {dateLabel}
-            {dateRange?.from && (
-              <button
-                type="button"
-                className="ml-1.5 rounded-sm px-0.5 text-zinc-500 hover:text-zinc-300"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFilters({ dateFrom: "", dateTo: "" });
-                }}
-              >
-                &times;
-              </button>
-            )}
+            &times;
           </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto border-zinc-700 bg-zinc-900 p-0"
-          align="start"
-        >
-          <Calendar
-            mode="range"
-            selected={dateRange}
-            onSelect={handleDateRangeSelect}
-            numberOfMonths={2}
-            defaultMonth={new Date(2026, 0)}
-          />
-        </PopoverContent>
-      </Popover>
+        )}
+      </div>
 
       <MultiSelectFilter
         label="Severity"

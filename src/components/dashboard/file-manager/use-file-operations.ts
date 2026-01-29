@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import useSWR, { mutate } from "swr";
 import type { R2File } from "./types";
 import { isValidNdjsonFile } from "./utils";
@@ -36,10 +37,16 @@ export function useFileOperations({
   const uploadFile = useCallback(
     async (file: File) => {
       if (!isValidNdjsonFile(file)) {
-        throw new Error("Please upload an .ndjson file");
+        toast.error("Invalid file type", {
+          description: "Please upload an .ndjson file",
+        });
+        return;
       }
 
       setIsUploading(true);
+      const toastId = toast.loading("Uploading file...", {
+        description: file.name,
+      });
 
       try {
         const presignRes = await fetch(FILES_API_ENDPOINT, {
@@ -66,6 +73,18 @@ export function useFileOperations({
 
         await mutate(FILES_API_ENDPOINT);
         onFileSelect?.(key);
+
+        toast.success("File uploaded", {
+          id: toastId,
+          description: file.name,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Upload failed";
+        toast.error("Upload failed", {
+          id: toastId,
+          description: message,
+        });
       } finally {
         setIsUploading(false);
       }
@@ -75,16 +94,36 @@ export function useFileOperations({
 
   const deleteFile = useCallback(
     async (key: string) => {
-      await fetch(FILES_API_ENDPOINT, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key }),
-      });
+      const toastId = toast.loading("Deleting file...");
 
-      await mutate(FILES_API_ENDPOINT);
+      try {
+        const res = await fetch(FILES_API_ENDPOINT, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key }),
+        });
 
-      if (selectedFile === key) {
-        onFileSelect?.(null);
+        if (!res.ok) {
+          throw new Error("Failed to delete file");
+        }
+
+        await mutate(FILES_API_ENDPOINT);
+
+        if (selectedFile === key) {
+          onFileSelect?.(null);
+        }
+
+        toast.success("File deleted", {
+          id: toastId,
+          description: key,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Delete failed";
+        toast.error("Delete failed", {
+          id: toastId,
+          description: message,
+        });
       }
     },
     [selectedFile, onFileSelect],

@@ -1,4 +1,5 @@
 import { LATENCY_BUCKETS } from "./constants";
+import { isValidUrlDate, parseDateFromUrl } from "./date-utils";
 import { getFileContent, listFiles } from "./r2";
 import type {
   Aggregations,
@@ -52,9 +53,19 @@ export function getFilteredRecords(
   records: LogRecord[],
   filters: Filters,
 ): LogRecord[] {
+  // Convert URL date format to ISO for comparison
+  const dateFromIso =
+    filters.dateFrom && isValidUrlDate(filters.dateFrom)
+      ? parseDateFromUrl(filters.dateFrom, "start")
+      : filters.dateFrom;
+  const dateToIso =
+    filters.dateTo && isValidUrlDate(filters.dateTo)
+      ? parseDateFromUrl(filters.dateTo, "end")
+      : filters.dateTo;
+
   return records.filter((r) => {
-    if (filters.dateFrom && r.timestamp < filters.dateFrom) return false;
-    if (filters.dateTo && r.timestamp > filters.dateTo) return false;
+    if (dateFromIso && r.timestamp < dateFromIso) return false;
+    if (dateToIso && r.timestamp > dateToIso) return false;
 
     if (filters.severity?.length && !filters.severity.includes(r.severityText))
       return false;

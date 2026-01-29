@@ -47,7 +47,7 @@ export async function listFiles(): Promise<R2File[]> {
 export async function getPresignedUploadUrl(
   filename: string,
 ): Promise<{ url: string; key: string }> {
-  const key = `logs/${Date.now()}-${filename}`;
+  const key = `logs/${Date.now()}-${Math.random().toString(36).slice(2, 10)}-${filename}`;
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
