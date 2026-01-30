@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { type ReactNode, useCallback, useMemo, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 import { useFilters } from "@/lib/hooks/use-filters";
@@ -64,8 +64,11 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     return "success";
   }, [selectedFile, error, isLoading, data]);
 
-  // Handle toast notifications without useEffect - compare with previous status
-  if (status !== prevStatusRef.current) {
+  // Handle toast notifications in useEffect to ensure they only fire once per committed render
+  // This prevents duplicate toasts from React's concurrent rendering or Strict Mode
+  useEffect(() => {
+    if (status === prevStatusRef.current) return;
+
     // Dismiss any existing loading toast first
     if (loadingToastRef.current && status !== "loading") {
       if (status === "success" && data) {
@@ -91,7 +94,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     }
 
     prevStatusRef.current = status;
-  }
+  }, [status, data, error]);
 
   const isFiltering = isValidating && status === "success";
 
