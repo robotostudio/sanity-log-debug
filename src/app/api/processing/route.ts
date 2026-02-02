@@ -3,26 +3,20 @@ import { getRun } from "workflow/api";
 import { handleError, success } from "@/lib/api";
 import { db, files, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
+import { desc, inArray, sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { getRun } from "workflow/api";
 
 const logger = new Logger("api/processing");
 
-type WorkflowStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "unknown";
-
 async function getWorkflowStatus(
   runId: string | null,
-): Promise<{ status: WorkflowStatus; error?: string }> {
+){
   if (!runId) return { status: "unknown" };
-
   try {
     const run = getRun(runId);
     const status = await run.status;
-    return { status: status as WorkflowStatus };
+    return { status: status };
   } catch (error) {
     logger.warn("Failed to get workflow status", { runId, error });
     return { status: "unknown", error: String(error) };
