@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { AnalyticsContent } from "@/components/dashboard/analytics-content";
-import { DashboardProvider } from "@/components/dashboard/data-state";
 
 export const metadata = {
   title: "Analytics | Sanity API Logs",
@@ -12,9 +11,7 @@ const SKELETON_IDS = ["skeleton-0", "skeleton-1", "skeleton-2", "skeleton-3"];
 export default function AnalyticsPage() {
   return (
     <Suspense fallback={<AnalyticsSkeleton />}>
-      <DashboardProvider>
-        <AnalyticsContent />
-      </DashboardProvider>
+      <AnalyticsContent />
     </Suspense>
   );
 }

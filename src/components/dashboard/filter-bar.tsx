@@ -1,12 +1,10 @@
 "use client";
 
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, Search } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { CalendarIcon } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -14,16 +12,17 @@ import {
 } from "@/components/ui/popover";
 import { FILTER_OPTIONS } from "@/lib/config";
 import { formatDateForUrl, parseDateStringToDate } from "@/lib/date-utils";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
-import { useDashboard } from "./data-state";
 import { DatePresets } from "./filters/date-presets";
+import { DebouncedSearch } from "./filters/debounced-search";
 import { FilterChip, FilterChipsContainer } from "./filters/filter-chip";
 import { MultiSelectFilter } from "./filters/multi-select-filter";
 import { StudioToggle } from "./filters/studio-toggle";
 
 export function FilterBar() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
   const {
     filters,
     setFilters,
@@ -32,27 +31,7 @@ export function FilterBar() {
     activePreset,
     applyDatePreset,
   } = useFilters();
-  const [searchInput, setSearchInput] = useState(filters.search);
   const isFiltering = state.isFiltering;
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setSearchInput(filters.search);
-  }, [filters.search]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
-  const handleSearchChange = (val: string) => {
-    setSearchInput(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setFilters({ search: val });
-    }, 300);
-  };
 
   const dateRange: DateRange | undefined =
     filters.dateFrom || filters.dateTo
@@ -79,7 +58,6 @@ export function FilterBar() {
       : format(dateRange.from, "MMM d")
     : "Custom";
 
-  // Build list of active filter chips
   const hasActiveFilters = activeCount > 0;
 
   return (
@@ -127,19 +105,15 @@ export function FilterBar() {
 
       {/* Row 2: Search + Multi-select filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          {isFiltering ? (
-            <Loader2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 animate-spin" />
-          ) : (
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
-          )}
-          <Input
-            placeholder="Search by URL or trace ID..."
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="h-8 w-72 pl-8 border-zinc-800 bg-transparent dark:bg-transparent text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500"
-          />
-        </div>
+        {/* Key prop resets component when external value changes */}
+        <DebouncedSearch
+          key={filters.search}
+          value={filters.search}
+          onChange={(val) => setFilters({ search: val })}
+          isFiltering={isFiltering}
+          placeholder="Search by URL or trace ID..."
+        />
+
         <MultiSelectFilter
           label="Method"
           options={FILTER_OPTIONS.method}
@@ -210,10 +184,7 @@ export function FilterBar() {
                   ? `${filters.search.slice(0, 20)}...`
                   : filters.search
               }
-              onRemove={() => {
-                setSearchInput("");
-                setFilters({ search: "" });
-              }}
+              onRemove={() => setFilters({ search: "" })}
             />
           )}
 

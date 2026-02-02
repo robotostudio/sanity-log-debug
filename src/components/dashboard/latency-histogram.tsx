@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
 import { LATENCY_BUCKETS } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { DistributionItem } from "@/lib/types";
 import {
   ANIMATION_DEFAULTS,
@@ -24,7 +25,6 @@ import {
   ChartTooltipWrapper,
   GRID_PROPS,
 } from "./chart-config";
-import { useDashboard } from "./data-state";
 
 // ============================================================================
 // Chart Card Wrapper
@@ -131,7 +131,7 @@ function LatencyData({ data }: { data: DistributionItem[] }) {
 // ============================================================================
 
 export function LatencyHistogram() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
     return <LatencyEmpty />;

@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
 import { SEVERITY_COLORS } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { TimeSeriesBucket } from "@/lib/types";
 import {
   ANIMATION_DEFAULTS,
@@ -27,7 +28,6 @@ import {
   GRID_PROPS,
   TooltipDot,
 } from "./chart-config";
-import { useDashboard } from "./data-state";
 
 // ============================================================================
 // Tooltip Component
@@ -215,7 +215,7 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
 // ============================================================================
 
 export function TimeSeriesChart() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   return (
     <AsyncState

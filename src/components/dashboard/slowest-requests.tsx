@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDuration } from "@/lib/constants";
-import { useDashboard } from "./data-state";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { StatusBadge } from "./status-badge";
 
 // ============================================================================
@@ -129,7 +129,7 @@ function SlowestRequestsData({ data }: { data: SlowRequest[] }) {
 // ============================================================================
 
 export function SlowestRequests() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
     return <SlowestRequestsEmpty />;

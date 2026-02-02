@@ -5,9 +5,9 @@ import { AsyncState } from "@/components/ui/async-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { KpiData, TimeSeriesBucket } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useDashboard } from "./data-state";
 
 // ============================================================================
 // Trend helpers
@@ -252,7 +252,7 @@ function KpiCardsData({
 // ============================================================================
 
 export function KpiCards() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   return (
     <AsyncState

@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { CHART_COLORS, getStatusColor } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { DistributionItem } from "@/lib/types";
 import {
   ANIMATION_DEFAULTS,
@@ -25,7 +26,6 @@ import {
   GRID_PROPS,
 } from "./chart-config";
 import { ChartCard, ChartEmpty, ChartLoading } from "./charts/chart-wrapper";
-import { useDashboard } from "./data-state";
 
 function BarTooltip({
   active,
@@ -100,7 +100,7 @@ function StatusDistributionData({ data }: { data: DistributionItem[] }) {
 }
 
 export function StatusDistribution() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {
@@ -166,7 +166,7 @@ function EndpointDistributionData({ data }: { data: DistributionItem[] }) {
 }
 
 export function EndpointDistribution() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {
@@ -306,7 +306,7 @@ interface DonutChartProps {
 }
 
 export function DonutChart({ dataKey, title }: DonutChartProps) {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {

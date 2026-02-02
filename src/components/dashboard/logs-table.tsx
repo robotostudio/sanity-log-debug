@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { List } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,10 +18,10 @@ import {
 } from "@/components/ui/table";
 import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
-import { useDashboard } from "./data-state";
 import { LogDetailSheet } from "./log-detail-sheet";
 import { SeverityBadge, StatusBadge } from "./status-badge";
 
@@ -96,18 +96,20 @@ function LogsTableLoading() {
   );
 }
 
-function LogsTableData() {
-  const { state } = useDashboard();
-  const { queryString } = useFilters();
+interface LogsTableDataProps {
+  queryString: string;
+}
+
+/**
+ * Logs table data component. Uses key prop pattern to reset pagination
+ * when filters change - parent passes key={queryString} to trigger reset.
+ */
+function LogsTableData({ queryString }: LogsTableDataProps) {
+  const state = useDashboardData();
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortColumn>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedRecord, setSelectedRecord] = useState<LogRecord | null>(null);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: queryString triggers page reset
-  useEffect(() => {
-    setPage(1);
-  }, [queryString]);
 
   const params = new URLSearchParams(queryString);
   params.set("page", String(page));
@@ -260,11 +262,13 @@ function LogsTableData() {
 }
 
 export function LogsTable() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
+  const { queryString } = useFilters();
 
   if (state.status === "empty") {
     return <LogsTableEmpty />;
   }
 
-  return <LogsTableData />;
+  // Key prop resets component state (including page) when filters change
+  return <LogsTableData key={queryString} queryString={queryString} />;
 }

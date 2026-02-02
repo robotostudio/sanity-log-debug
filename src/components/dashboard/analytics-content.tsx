@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DatabaseIconSm } from "@/components/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { StateContainer } from "@/components/ui/state-container";
-import { useDashboard } from "./data-state";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import {
   DonutChart,
   EndpointDistribution,
@@ -21,7 +21,7 @@ import { SlowestRequests } from "./slowest-requests";
 import { TimeSeriesChart } from "./time-series-chart";
 
 export function AnalyticsContent() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   // Show empty state when no file is selected
   if (state.status === "empty") {

@@ -2,7 +2,6 @@
 
 import { AlertCircle, Loader2 } from "lucide-react";
 import { use } from "react";
-import { DashboardProvider } from "@/components/dashboard/data-state";
 import {
   DonutChart,
   EndpointDistribution,
@@ -17,6 +16,7 @@ import { SlowestRequests } from "@/components/dashboard/slowest-requests";
 import { TimeSeriesChart } from "@/components/dashboard/time-series-chart";
 import { StateContainer } from "@/components/ui/state-container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileKeyProvider } from "@/lib/hooks/use-file-key-context";
 import { SourceDetailHeader } from "./source-detail-header";
 import { useSourceDetail } from "./use-source-detail";
 
@@ -98,7 +98,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
       />
 
       {isReady ? (
-        <DashboardProvider fileKey={source.key}>
+        <FileKeyProvider fileKey={source.key}>
           <Tabs defaultValue="analytics">
             <TabsList
               variant="line"
@@ -116,7 +116,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
               <LogsTabContent />
             </TabsContent>
           </Tabs>
-        </DashboardProvider>
+        </FileKeyProvider>
       ) : (
         <StateContainer
           variant="card"

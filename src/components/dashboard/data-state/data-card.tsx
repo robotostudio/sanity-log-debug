@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
-import { useDashboard } from "./context";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 
 // ============================================================================
 // Loading State Component
@@ -81,7 +81,7 @@ function DataCardContent({
   loadingHeight = "h-52",
   loadingVariant = "chart",
 }: DataCardContentProps) {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
     return (
@@ -126,5 +126,3 @@ export const DataCard = {
   Content: DataCardContent,
   Loading: LoadingState,
 };
-
-export { useDashboard };

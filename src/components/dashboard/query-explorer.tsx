@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDuration } from "@/lib/constants";
-import { useDashboard } from "./data-state";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 
 // ============================================================================
 // Types
@@ -167,7 +167,7 @@ function QueryExplorerData({ data }: { data: QueryData[] }) {
 // ============================================================================
 
 export function QueryExplorer() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   return (
     <AsyncState
