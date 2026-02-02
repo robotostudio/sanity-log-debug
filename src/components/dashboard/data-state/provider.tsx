@@ -1,11 +1,12 @@
 "use client";
 
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
-import useSWR from "swr";
 import { apiFetcher } from "@/lib/api-client";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { logKeys } from "@/lib/query-keys";
 import type { Aggregations } from "@/lib/types";
 import { DashboardContext } from "./context";
 import type { DashboardState, DataStatus } from "./types";
@@ -40,21 +41,20 @@ export function DashboardProvider({
       : `/api/logs/aggregations?${fileParam}`
     : null;
 
-  const { data, isLoading, isValidating, error } = useSWR<Aggregations>(
-    aggUrl,
-    apiFetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-    },
-  );
+  const { data, isPending, isFetching, error } = useQuery({
+    queryKey: logKeys.aggregation(selectedFile ?? "", queryString),
+    queryFn: () => apiFetcher<Aggregations>(aggUrl!),
+    enabled: shouldFetch && aggUrl !== null,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
 
   const status: DataStatus = useMemo(() => {
     if (!selectedFile) return "empty";
     if (error) return "error";
-    if (isLoading && !data) return "loading";
+    if (isPending && !data) return "loading";
     return "success";
-  }, [selectedFile, error, isLoading, data]);
+  }, [selectedFile, error, isPending, data]);
 
   useEffect(() => {
     if (status === prevStatusRef.current) return;
@@ -83,7 +83,7 @@ export function DashboardProvider({
     prevStatusRef.current = status;
   }, [status, data, error]);
 
-  const isFiltering = isValidating && status === "success";
+  const isFiltering = isFetching && status === "success";
 
   const state: DashboardState = useMemo(
     () => ({

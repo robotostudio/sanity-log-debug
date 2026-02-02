@@ -30,7 +30,7 @@ export function unwrapResponse<T>(
 }
 
 /**
- * Fetcher for SWR that handles the new API response format.
+ * Fetcher for TanStack Query that handles the API response format.
  * Throws ApiClientError on API errors.
  */
 export async function apiFetcher<T>(url: string): Promise<T> {

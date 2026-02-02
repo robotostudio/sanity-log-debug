@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   CheckCircle2,
@@ -11,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import useSWR from "swr";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +19,7 @@ import { StateContainer } from "@/components/ui/state-container";
 import { apiFetcher } from "@/lib/api-client";
 import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
+import { processingKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 interface ProcessingStats {
@@ -40,11 +41,11 @@ interface ProcessingData {
 }
 
 export function PipelineContent() {
-  const { data, error, isLoading } = useSWR<ProcessingData>(
-    "/api/processing",
-    apiFetcher,
-    { refreshInterval: 2000 },
-  );
+  const { data, error, isPending } = useQuery({
+    queryKey: processingKeys.stats(),
+    queryFn: () => apiFetcher<ProcessingData>("/api/processing"),
+    refetchInterval: 2000,
+  });
 
   if (error) {
     return (
@@ -70,27 +71,27 @@ export function PipelineContent() {
           label="In Queue"
           value={stats.pending ?? 0}
           icon={Clock}
-          loading={isLoading}
+          loading={isPending}
         />
         <MetricCard
           label="Processing"
           value={stats.processing ?? 0}
           icon={Zap}
-          loading={isLoading}
+          loading={isPending}
           pulse={Boolean(stats.processing)}
         />
         <MetricCard
           label="Completed"
           value={stats.ready ?? 0}
           icon={CheckCircle2}
-          loading={isLoading}
+          loading={isPending}
           accent="success"
         />
         <MetricCard
           label="Failed"
           value={stats.failed ?? 0}
           icon={XCircle}
-          loading={isLoading}
+          loading={isPending}
           accent="error"
         />
       </div>
@@ -121,7 +122,7 @@ export function PipelineContent() {
             Recent processing activity
           </p>
         </div>
-        <JobsTable jobs={recentJobs} loading={isLoading} />
+        <JobsTable jobs={recentJobs} loading={isPending} />
       </section>
     </div>
   );
@@ -283,7 +284,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
         <Link
           key={job.id}
           href={`/sources/${job.id}`}
-          className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04] cursor-pointer"
+          className="grid cursor-pointer grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
         >
           <div className="col-span-2 flex items-center gap-2">
             <div

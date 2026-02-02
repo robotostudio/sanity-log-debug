@@ -1,5 +1,5 @@
 import { desc, inArray, sql } from "drizzle-orm";
-import { Run } from "workflow/api";
+import { getRun, Run } from "workflow/api";
 import { handleError, success } from "@/lib/api";
 import { db, files, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
@@ -19,8 +19,8 @@ async function getWorkflowStatus(
 ): Promise<{ status: WorkflowStatus; error?: string }> {
   if (!runId) return { status: "unknown" };
 
-  try {
-    const run = new Run(runId);
+  try { 
+    const run = getRun(runId);
     const status = await run.status;
     return { status: status as WorkflowStatus };
   } catch (error) {

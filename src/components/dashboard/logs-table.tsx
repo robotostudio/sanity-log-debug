@@ -1,9 +1,9 @@
 "use client";
 
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { List } from "lucide-react";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +19,7 @@ import {
 import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
 import { useDashboard } from "./data-state";
 import { LogDetailSheet } from "./log-detail-sheet";
@@ -115,11 +116,15 @@ function LogsTableData() {
   params.set("sortDir", sortDir);
   if (state.selectedFile) params.set("fileKey", state.selectedFile);
 
-  const { data, isLoading } = useSWR<LogsResponse>(
-    state.selectedFile ? `/api/logs?${params.toString()}` : null,
-    apiFetcher,
-    { keepPreviousData: true, revalidateOnFocus: false },
-  );
+  const paramsObj = Object.fromEntries(params.entries());
+
+  const { data, isPending } = useQuery({
+    queryKey: logKeys.list(paramsObj),
+    queryFn: () => apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`),
+    enabled: !!state.selectedFile,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
 
   const handleSort = (col: SortColumn) => {
     if (sortBy === col) {
@@ -152,7 +157,7 @@ function LogsTableData() {
     </TableHead>
   );
 
-  if (isLoading && !data) {
+  if (isPending && !data) {
     return <LogsTableLoading />;
   }
 
