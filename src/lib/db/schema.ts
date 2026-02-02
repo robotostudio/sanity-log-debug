@@ -17,6 +17,10 @@ export const files = pgTable("files", {
   recordCount: integer("record_count"),
   processedAt: timestamp("processed_at"),
   workflowRunId: text("workflow_run_id"),
+  // Error tracking columns
+  errorMessage: text("error_message"),
+  lastErrorAt: timestamp("last_error_at"),
+  failedRecords: integer("failed_records").default(0),
 });
 
 export const logRecords = pgTable(
@@ -65,7 +69,28 @@ export const logRecords = pgTable(
   ],
 );
 
+// Batch progress tracking table for recovery
+export const batchProgress = pgTable(
+  "batch_progress",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    fileId: text("file_id")
+      .notNull()
+      .references(() => files.id, { onDelete: "cascade" }),
+    batchIndex: integer("batch_index").notNull(),
+    status: text("status").notNull().default("pending"), // pending, completed, failed
+    recordCount: integer("record_count"),
+    parseErrors: integer("parse_errors").default(0),
+    startedAt: timestamp("started_at"),
+    completedAt: timestamp("completed_at"),
+    errorMessage: text("error_message"),
+  },
+  (table) => [index("idx_batch_file_index").on(table.fileId, table.batchIndex)],
+);
+
 export type File = typeof files.$inferSelect;
 export type NewFile = typeof files.$inferInsert;
 export type LogRecord = typeof logRecords.$inferSelect;
 export type NewLogRecord = typeof logRecords.$inferInsert;
+export type BatchProgress = typeof batchProgress.$inferSelect;
+export type NewBatchProgress = typeof batchProgress.$inferInsert;
