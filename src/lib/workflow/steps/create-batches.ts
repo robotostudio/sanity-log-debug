@@ -5,16 +5,8 @@ import { getFileStream } from "@/lib/r2";
 import type { LogRecord } from "@/lib/types";
 
 const logger = new Logger("workflow/create-batches");
-const BATCH_SIZE = 1000;
+export const BATCH_SIZE = 1000;
 const MAX_ERROR_RATE = 0.5; // Abort if >50% of lines fail to parse
-
-export interface BatchInfo {
-  batchIndex: number;
-  startLine: number;
-  endLine: number;
-  records: ParsedRecord[];
-  parseErrors: ParseError[];
-}
 
 export interface ParsedRecord {
   timestamp: string;
@@ -155,24 +147,121 @@ async function* readLines(
   }
 }
 
-export async function* streamBatches(
+// Lightweight metadata for workflow state - no records included
+export interface BatchMetadata {
+  batchIndex: number;
+  startLine: number;
+  endLine: number;
+}
+
+export interface CountLinesResult {
+  totalLines: number;
+  batchSize: number;
+  batches: BatchMetadata[];
+}
+
+/**
+ * Fast line count - only counts newlines, doesn't parse JSON.
+ * Returns batch metadata with line ranges for each batch.
+ */
+export async function countLines({
+  fileKey,
+}: {
+  fileKey: string;
+}): Promise<CountLinesResult> {
+  logger.info("Counting lines in file", { fileKey });
+
+  const stream = await getFileStream(fileKey);
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let totalLines = 0;
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      // Count final line if buffer has content
+      if (buffer.trim()) {
+        totalLines++;
+      }
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (line.trim()) {
+        totalLines++;
+      }
+    }
+  }
+
+  reader.releaseLock();
+
+  // Calculate batch metadata
+  const batches: BatchMetadata[] = [];
+  const totalBatches = Math.ceil(totalLines / BATCH_SIZE);
+
+  for (let i = 0; i < totalBatches; i++) {
+    const startLine = i * BATCH_SIZE + 1;
+    const endLine = Math.min((i + 1) * BATCH_SIZE, totalLines);
+    batches.push({
+      batchIndex: i,
+      startLine,
+      endLine,
+    });
+  }
+
+  logger.info("Line count complete", {
+    fileKey,
+    totalLines,
+    totalBatches: batches.length,
+    batchSize: BATCH_SIZE,
+  });
+
+  return {
+    totalLines,
+    batchSize: BATCH_SIZE,
+    batches,
+  };
+}
+
+export interface ReadBatchResult {
+  records: ParsedRecord[];
+  parseErrors: ParseError[];
+}
+
+/**
+ * Reads and parses a specific batch from file by line range.
+ * Called by processBatch - not a workflow step itself.
+ */
+export async function readBatchFromFile(
   fileKey: string,
-): AsyncGenerator<BatchInfo> {
-  logger.info("Starting streaming batch creation", { fileKey });
+  startLine: number,
+  endLine: number,
+): Promise<ReadBatchResult> {
+  logger.info("Reading batch from file", { fileKey, startLine, endLine });
 
   const stream = await getFileStream(fileKey);
   const records: ParsedRecord[] = [];
   const parseErrors: ParseError[] = [];
-  let batchIndex = 0;
   let lineNumber = 0;
-  let startLine = 0;
   let totalErrors = 0;
   let totalLines = 0;
 
   for await (const line of readLines(stream)) {
     lineNumber++;
-    totalLines++;
 
+    // Skip lines before our range
+    if (lineNumber < startLine) continue;
+
+    // Stop after our range
+    if (lineNumber > endLine) break;
+
+    totalLines++;
     const result = safeParseRecord(line, lineNumber);
 
     if (result.success && result.record) {
@@ -185,7 +274,7 @@ export async function* streamBatches(
         rawLine: line.length > 200 ? `${line.substring(0, 200)}...` : line,
       });
 
-      // Check error rate periodically
+      // Check error rate
       if (totalLines >= 100) {
         const errorRate = totalErrors / totalLines;
         if (errorRate > MAX_ERROR_RATE) {
@@ -195,79 +284,15 @@ export async function* streamBatches(
         }
       }
     }
-
-    // Yield batch when full
-    if (records.length >= BATCH_SIZE) {
-      yield {
-        batchIndex,
-        startLine,
-        endLine: lineNumber,
-        records: [...records],
-        parseErrors: [...parseErrors],
-      };
-
-      records.length = 0;
-      parseErrors.length = 0;
-      batchIndex++;
-      startLine = lineNumber + 1;
-    }
   }
 
-  // Yield final partial batch
-  if (records.length > 0 || parseErrors.length > 0) {
-    yield {
-      batchIndex,
-      startLine,
-      endLine: lineNumber,
-      records: [...records],
-      parseErrors: [...parseErrors],
-    };
-  }
-
-  logger.info("Streaming batch creation complete", {
+  logger.info("Batch read complete", {
     fileKey,
-    totalLines,
-    totalErrors,
-    totalBatches: batchIndex + 1,
-  });
-}
-
-export interface CreateBatchesResult {
-  totalRecords: number;
-  totalBatches: number;
-  totalParseErrors: number;
-  batches: BatchInfo[];
-}
-
-export async function createBatches({
-  fileKey,
-}: {
-  fileKey: string;
-}): Promise<CreateBatchesResult> {
-  logger.info("Creating batches from file (non-streaming)", { fileKey });
-
-  const batches: BatchInfo[] = [];
-  let totalRecords = 0;
-  let totalParseErrors = 0;
-
-  for await (const batch of streamBatches(fileKey)) {
-    batches.push(batch);
-    totalRecords += batch.records.length;
-    totalParseErrors += batch.parseErrors.length;
-  }
-
-  logger.info("Batches created", {
-    fileKey,
-    totalRecords,
-    totalParseErrors,
-    totalBatches: batches.length,
-    batchSize: BATCH_SIZE,
+    startLine,
+    endLine,
+    recordCount: records.length,
+    parseErrorCount: parseErrors.length,
   });
 
-  return {
-    totalRecords,
-    totalBatches: batches.length,
-    totalParseErrors,
-    batches,
-  };
+  return { records, parseErrors };
 }

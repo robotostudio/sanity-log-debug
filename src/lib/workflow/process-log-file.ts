@@ -2,7 +2,7 @@
 
 import { Logger } from "@/lib/logger";
 
-import { streamBatches } from "./steps/create-batches";
+import { countLines } from "./steps/create-batches";
 import { deleteFromR2 } from "./steps/delete-from-r2";
 import { markComplete } from "./steps/mark-complete";
 import { markFailed } from "./steps/mark-failed";
@@ -39,9 +39,17 @@ export async function processLogFile(
     let totalFailedRecords = 0;
     let batchesProcessed = 0;
 
-    // Stream batches one at a time to avoid large payloads
-    for await (const batch of streamBatches(fileKey)) {
-      const result = await processBatch({ fileId, batch });
+    // Get batch metadata (lightweight - just line ranges, no records)
+    const { batches } = await countLines({ fileKey });
+
+    logger.info("File scanned", {
+      fileId,
+      totalBatches: batches.length,
+    });
+
+    // Process each batch - records are read on-demand by processBatch
+    for (const batch of batches) {
+      const result = await processBatch({ fileId, fileKey, batch });
 
       if (!result.skipped) {
         totalRecords += result.recordsInserted;

@@ -5,7 +5,12 @@ import { and, eq } from "drizzle-orm";
 import { batchProgress, db, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
 import { withRetry } from "../utils/retry";
-import type { BatchInfo, ParsedRecord, ParseError } from "./create-batches";
+import {
+  readBatchFromFile,
+  type BatchMetadata,
+  type ParsedRecord,
+  type ParseError,
+} from "./create-batches";
 
 const logger = new Logger("workflow/process-batch");
 
@@ -92,19 +97,33 @@ function isValidDate(date: Date): boolean {
 
 export async function processBatch({
   fileId,
+  fileKey,
   batch,
 }: {
   fileId: string;
-  batch: BatchInfo;
+  fileKey: string;
+  batch: BatchMetadata;
 }): Promise<ProcessBatchResult> {
-  const { batchIndex, records, parseErrors } = batch;
+  const { batchIndex, startLine, endLine } = batch;
 
   logger.info("Processing batch", {
     fileId,
     batchIndex,
+    lineRange: `${startLine}-${endLine}`,
+  });
+
+  // Read records from file for this batch
+  const { records, parseErrors } = await readBatchFromFile(
+    fileKey,
+    startLine,
+    endLine,
+  );
+
+  logger.info("Batch records loaded", {
+    fileId,
+    batchIndex,
     recordCount: records.length,
     parseErrors: parseErrors.length,
-    lineRange: `${batch.startLine}-${batch.endLine}`,
   });
 
   // Check if batch already processed (for recovery)
