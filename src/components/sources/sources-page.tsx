@@ -4,42 +4,12 @@ import { useCallback, useRef } from "react";
 import { DatabaseIconSm } from "@/components/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "./empty-state";
-import { SourceList } from "./source-list";
-import type { Source } from "./types";
-
-const MOCK_SOURCES: Source[] = [
-  {
-    key: "uploads/k5jaomch-dcflm8sj",
-    size: 207_093_760,
-    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    processingStatus: "processing",
-    recordCount: 116121,
-  },
-  {
-    key: "uploads/k5jaomch-dcflm8sj-2",
-    size: 207_093_760,
-    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    processingStatus: "ready",
-    recordCount: 116121,
-  },
-  {
-    key: "uploads/k5jaomch-dcflm8sj-3",
-    size: 207_093_760,
-    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    processingStatus: "ready",
-    recordCount: 116121,
-  },
-  {
-    key: "uploads/k5jaomch-dcflm8sj-4",
-    size: 207_093_760,
-    lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    processingStatus: "ready",
-    recordCount: 116121,
-  },
-];
+import { SourceList, SourceListSkeleton } from "./source-list";
+import { useSources } from "./use-sources";
 
 export function SourcesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { sources, isLoading, uploadFile, deleteSource } = useSources();
 
   const triggerUpload = useCallback(() => {
     fileInputRef.current?.click();
@@ -49,18 +19,16 @@ export function SourcesPage() {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
-        // TODO: wire up upload
+        await uploadFile(file);
       }
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     },
-    [],
+    [uploadFile],
   );
 
-  // Toggle this to see empty state vs populated state
-  const sources = MOCK_SOURCES;
-  const isEmpty = sources.length === 0;
+  const isEmpty = !isLoading && sources.length === 0;
 
   const uploadButton = (
     <>
@@ -82,6 +50,15 @@ export function SourcesPage() {
     </>
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 flex-col gap-8">
+        <PageHeader title="Sources">{uploadButton}</PageHeader>
+        <SourceListSkeleton />
+      </div>
+    );
+  }
+
   if (isEmpty) {
     return (
       <div className="flex flex-1 flex-col">
@@ -94,7 +71,7 @@ export function SourcesPage() {
   return (
     <div className="flex flex-1 flex-col gap-8">
       <PageHeader title="Sources">{uploadButton}</PageHeader>
-      <SourceList sources={sources} />
+      <SourceList sources={sources} onDelete={deleteSource} />
     </div>
   );
 }

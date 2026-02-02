@@ -74,7 +74,7 @@ export function AnalyticsContent() {
           href="/sources"
           className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
         >
-          <Database className="h-4 w-4" />
+          <DatabaseIconSm className="h-4 w-4" />
           Browse sources
         </Link>
       </PageHeader>

@@ -8,6 +8,7 @@ import { formatBytes, getFileName } from "./utils";
 
 interface SourceRowProps {
   source: Source;
+  onDelete?: (key: string) => void;
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -70,7 +71,7 @@ function AnalyticsIconSmall() {
   );
 }
 
-export function SourceRow({ source }: SourceRowProps) {
+export function SourceRow({ source, onDelete }: SourceRowProps) {
   const fileName = getFileName(source.key);
   const isReady = source.processingStatus === "ready";
   const isProcessing =
@@ -78,9 +79,9 @@ export function SourceRow({ source }: SourceRowProps) {
     source.processingStatus === "pending";
 
   return (
-    <div className="grid grid-cols-[2fr_1fr_1.2fr_1.4fr_0.8fr_1fr] items-center gap-4 border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]">
+    <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]">
       {/* Name + time */}
-      <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex flex-col gap-0.5 min-w-0 pr-4">
         <p className="truncate text-[16px] leading-[24px] text-[#f4f4f5]">
           {fileName}
         </p>
@@ -108,6 +109,20 @@ export function SourceRow({ source }: SourceRowProps) {
         </p>
       </div>
 
+      {/* Size */}
+      <div>
+        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
+          {formatBytes(source.size)}
+        </p>
+      </div>
+
+      {/* Date range */}
+      <div>
+        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
+          {formatDateRange(source.lastModified)}
+        </p>
+      </div>
+
       {/* View Analytics */}
       <div>
         {isReady ? (
@@ -129,20 +144,6 @@ export function SourceRow({ source }: SourceRowProps) {
             View Analytics
           </div>
         )}
-      </div>
-
-      {/* Size */}
-      <div>
-        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
-          {formatBytes(source.size)}
-        </p>
-      </div>
-
-      {/* Date range */}
-      <div>
-        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
-          {formatDateRange(source.lastModified)}
-        </p>
       </div>
     </div>
   );
