@@ -1,9 +1,9 @@
 "use workflow";
 
 import { Logger } from "@/lib/logger";
-import { deleteFile } from "@/lib/r2";
 
-import { streamBatches } from "./steps/create-batches";
+import { createBatches } from "./steps/create-batches";
+import { deleteFromR2 } from "./steps/delete-from-r2";
 import { markComplete } from "./steps/mark-complete";
 import { markFailed } from "./steps/mark-failed";
 import { markProcessing } from "./steps/mark-processing";
@@ -39,8 +39,11 @@ export async function processLogFile(
     let totalFailedRecords = 0;
     let batchesProcessed = 0;
 
-    // Stream batches to avoid loading entire file into memory
-    for await (const batch of streamBatches(fileKey)) {
+    // Create all batches first (workflow steps must return serializable values)
+    const { batches } = await createBatches({ fileKey });
+
+    // Process each batch
+    for (const batch of batches) {
       const result = await processBatch({ fileId, batch });
 
       if (!result.skipped) {
@@ -73,8 +76,7 @@ export async function processLogFile(
 
     // Delete from R2 - non-critical, catch errors
     try {
-      await deleteFile(fileKey);
-      logger.info("File deleted from R2", { fileKey });
+      await deleteFromR2({ fileKey });
     } catch (deleteError) {
       logger.warn("Failed to delete file from R2 (non-critical)", {
         fileKey,

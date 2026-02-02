@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import useSWR, { mutate } from "swr";
 import type { Source } from "./types";
@@ -28,6 +28,9 @@ export function useSources() {
     fetcher,
   );
 
+  // Track if we had processing sources on previous render to catch status transitions
+  const hadProcessingSourcesRef = useRef(false);
+
   // Determine if we should poll based on whether any sources are processing
   const hasProcessingSources = useMemo(() => {
     return data?.files?.some(
@@ -35,6 +38,16 @@ export function useSources() {
         f.processingStatus === "pending" || f.processingStatus === "processing",
     );
   }, [data?.files]);
+
+  // When processing completes (transitions from processing to done/failed), revalidate once
+  // to ensure we capture the final status
+  useEffect(() => {
+    if (hadProcessingSourcesRef.current && !hasProcessingSources) {
+      // Processing just finished - do one final revalidation to catch the status
+      mutate(FILES_API_ENDPOINT);
+    }
+    hadProcessingSourcesRef.current = hasProcessingSources ?? false;
+  }, [hasProcessingSources]);
 
   // Poll for updates when sources are processing
   useSWR<{ files: Source[] }>(
