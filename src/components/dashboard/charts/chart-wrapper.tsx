@@ -30,7 +30,7 @@ interface ChartEmptyProps {
 export function ChartEmpty({
   title,
   icon: Icon,
-  height = "h-[300px]",
+  height = "h-72",
 }: ChartEmptyProps) {
   return (
     <StateContainer
@@ -46,6 +46,6 @@ interface ChartLoadingProps {
   height?: string;
 }
 
-export function ChartLoading({ height = "h-[300px]" }: ChartLoadingProps) {
+export function ChartLoading({ height = "h-72" }: ChartLoadingProps) {
   return <Skeleton className={`w-full ${height}`} />;
 }

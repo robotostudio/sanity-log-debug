@@ -29,7 +29,7 @@ function PipelineSkeleton() {
       {/* Header skeleton matching PageHeader structure */}
       <div className="shrink-0">
         <div className="h-6 w-40 animate-pulse rounded bg-zinc-800/50" />
-        <div className="mt-[31px] h-[34px] w-32 animate-pulse rounded bg-zinc-800/50" />
+        <div className="mt-8 h-9 w-32 animate-pulse rounded bg-zinc-800/50" />
       </div>
 
       {/* KPI cards skeleton */}
@@ -43,7 +43,7 @@ function PipelineSkeleton() {
       </div>
 
       {/* Table skeleton */}
-      <div className="overflow-hidden rounded-[8px] border border-zinc-800">
+      <div className="overflow-hidden rounded-lg border border-zinc-800">
         {TABLE_SKELETON_IDS.map((id) => (
           <div
             key={id}

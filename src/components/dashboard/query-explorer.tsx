@@ -78,7 +78,7 @@ function QueryExplorerEmpty() {
         icon={<Database className="h-6 w-6 text-zinc-500" />}
         title="No query data"
         description="Select a log file to explore GROQ queries"
-        className="h-[200px] py-0"
+        className="h-52 py-0"
       />
     </CardWrapper>
   );
@@ -115,7 +115,7 @@ function QueryExplorerData({ data }: { data: QueryData[] }) {
 
   return (
     <CardWrapper showSearch searchValue={search} onSearchChange={setSearch}>
-      <div className="max-h-[300px] overflow-y-auto">
+      <div className="max-h-72 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-800 hover:bg-transparent">

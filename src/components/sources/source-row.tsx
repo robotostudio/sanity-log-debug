@@ -56,7 +56,7 @@ function StatusDot({ status }: { status?: ProcessingStatus }) {
   return (
     <div className="flex items-center gap-2">
       <div className={cn("h-3 w-3 rounded-full", STATUS_DOT_COLORS[key])} />
-      <span className="text-[16px] leading-[24px] text-[#f4f4f5]">
+      <span className="text-base leading-6 text-[#f4f4f5]">
         {STATUS_LABELS[key]}
       </span>
     </div>
@@ -65,7 +65,7 @@ function StatusDot({ status }: { status?: ProcessingStatus }) {
 
 function AnalyticsIconSmall() {
   return (
-    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[3px] border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
+    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
       <AnalyticsNavIcon className="h-3.5 w-3.5 text-zinc-400" />
     </div>
   );
@@ -86,10 +86,10 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
     >
       {/* Name + time */}
       <div className="flex flex-col gap-0.5 min-w-0 pr-4">
-        <p className="truncate text-[16px] leading-[24px] text-[#f4f4f5]">
+        <p className="truncate text-base leading-6 text-[#f4f4f5]">
           {displayName}
         </p>
-        <p className="text-[16px] leading-[24px] text-[#a1a1aa]">
+        <p className="text-base leading-6 text-[#a1a1aa]">
           {formatRelativeTime(source.lastModified)}
         </p>
       </div>
@@ -101,7 +101,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
 
       {/* Records */}
       <div>
-        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
+        <p className="text-base leading-6 text-[#f4f4f5]">
           {source.recordCount != null ? (
             <>
               {source.recordCount.toLocaleString()}{" "}
@@ -115,14 +115,14 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
 
       {/* Size */}
       <div>
-        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
+        <p className="text-base leading-6 text-[#f4f4f5]">
           {formatBytes(source.size)}
         </p>
       </div>
 
       {/* Date range */}
       <div>
-        <p className="text-[16px] leading-[24px] text-[#f4f4f5]">
+        <p className="text-base leading-6 text-[#f4f4f5]">
           {formatDateRange(source.lastModified)}
         </p>
       </div>
@@ -131,7 +131,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       <div>
         <div
           className={cn(
-            "inline-flex items-center gap-2 text-[16px] leading-[24px] text-[#f4f4f5]",
+            "inline-flex items-center gap-2 text-base leading-6 text-[#f4f4f5]",
             !isReady && "text-[#a1a1aa]",
             isProcessing && "opacity-40",
           )}

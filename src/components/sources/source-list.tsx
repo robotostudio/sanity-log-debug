@@ -18,7 +18,7 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-zinc-800">
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
       {sources.map((source) => (
         <SourceRow key={source.key} source={source} onDelete={onDelete} />
       ))}
@@ -28,7 +28,7 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
 
 export function SourceListSkeleton() {
   return (
-    <div className="overflow-hidden rounded-[8px] border border-zinc-800">
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
       {SKELETON_IDS.map((id) => (
         <div
           key={id}

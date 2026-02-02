@@ -49,12 +49,10 @@ function MetadataItem({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[13px] leading-[16px] text-[#a1a1aa] tracking-wide">
+      <span className="text-xs leading-4 text-[#a1a1aa] tracking-wide">
         {label}
       </span>
-      <span className="text-[15px] leading-[22px] text-[#f4f4f5]">
-        {children}
-      </span>
+      <span className="text-base leading-snug text-[#f4f4f5]">{children}</span>
     </div>
   );
 }
@@ -78,7 +76,7 @@ export function SourceDetailHeader({
 
   return (
     <div className="shrink-0">
-      <p className="text-[16px] leading-[24px] flex items-center gap-1.5">
+      <p className="text-base leading-6 flex items-center gap-1.5">
         <Link
           href="/sources"
           className="text-[#a1a1aa] transition-colors hover:text-[#d4d4d8]"
@@ -89,16 +87,16 @@ export function SourceDetailHeader({
         <span className="text-[#fafafa]">{displayName}</span>
       </p>
 
-      <div className="mt-[31px] flex items-center justify-between">
+      <div className="mt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-[24px] font-medium leading-[34px] text-[#fafafa]">
+          <h1 className="text-2xl font-medium leading-9 text-[#fafafa]">
             {displayName}
           </h1>
           <div className="flex items-center gap-2 rounded-full border border-zinc-800 px-3 py-1">
             <div
               className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[statusKey]}`}
             />
-            <span className="text-[14px] leading-[20px] text-[#f4f4f5]">
+            <span className="text-sm leading-5 text-[#f4f4f5]">
               {STATUS_LABELS[statusKey]}
             </span>
           </div>
@@ -110,7 +108,7 @@ export function SourceDetailHeader({
               <button
                 type="button"
                 disabled={isDeleting}
-                className="inline-flex items-center justify-center rounded-[8px] border border-zinc-800 p-2 text-[#a1a1aa] transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-[#f4f4f5] disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-lg border border-zinc-800 p-2 text-[#a1a1aa] transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-[#f4f4f5] disabled:opacity-50"
               >
                 {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

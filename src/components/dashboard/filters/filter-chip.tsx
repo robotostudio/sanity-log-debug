@@ -19,7 +19,7 @@ export function FilterChip({
   return (
     <span
       className={cn(
-        "group inline-flex items-center gap-1.5 rounded-[8px] border border-zinc-700 bg-transparent px-2.5 py-1 text-xs text-zinc-200",
+        "group inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-transparent px-2.5 py-1 text-xs text-zinc-200",
         "animate-in fade-in-0 zoom-in-95 duration-150",
         className,
       )}

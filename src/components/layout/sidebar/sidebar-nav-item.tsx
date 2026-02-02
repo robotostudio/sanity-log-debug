@@ -25,7 +25,7 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
     <Link
       href={item.href}
       className={cn(
-        "group relative flex items-center gap-2 rounded-[8px] px-3 py-2 text-base font-medium transition-colors",
+        "group relative flex items-center gap-2 rounded-lg px-3 py-2 text-base font-medium transition-colors",
         isActive
           ? "bg-zinc-900 text-zinc-50"
           : "text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50",
@@ -36,7 +36,7 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
     >
       <Icon
         className={cn(
-          "h-[18px] w-[18px] shrink-0",
+          "h-5 w-5 shrink-0",
           isActive ? "text-zinc-50" : "text-zinc-400 group-hover:text-zinc-50",
         )}
       />

@@ -128,19 +128,19 @@ interface EmptyStateProps {
 
 export function EmptyState({ onUpload }: EmptyStateProps) {
   return (
-    <div className="flex flex-1 flex-col items-start justify-center -mt-[90px]">
-      <div className="flex w-[345px] flex-col items-start gap-[24px] self-center">
-        <div className="flex flex-col items-start gap-[24px] w-full">
-          <div className="flex h-16 w-16 items-center justify-center rounded-[8px] border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
+    <div className="flex flex-1 flex-col items-start justify-center -mt-24">
+      <div className="flex w-80 flex-col items-start gap-6 self-center">
+        <div className="flex flex-col items-start gap-6 w-full">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
             <SourcesIcon />
           </div>
 
-          <div className="flex flex-col items-start gap-[16px] w-full">
-            <h2 className="text-[24px] font-semibold leading-[34px] text-[#fafafa]">
+          <div className="flex flex-col items-start gap-4 w-full">
+            <h2 className="text-2xl font-semibold leading-9 text-[#fafafa]">
               No data sources yet
             </h2>
 
-            <p className="text-[18px] leading-[28px] text-[#a1a1aa]">
+            <p className="text-lg leading-7 text-[#a1a1aa]">
               Upload your first{" "}
               <span className="text-[#f4f4f5]">.ndjson (upto 500 MB)</span> file
               to start exploring your data. We&apos;ll parse and validate it
@@ -152,9 +152,9 @@ export function EmptyState({ onUpload }: EmptyStateProps) {
         <button
           type="button"
           onClick={onUpload}
-          className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[16px] py-[8px] text-[18px] font-medium leading-[28px] text-[#09090b] transition-colors hover:bg-zinc-200"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-4 py-2 text-lg font-medium leading-7 text-[#09090b] transition-colors hover:bg-zinc-200"
         >
-          <DatabaseIconSm className="h-[18px] w-[18px]" />
+          <DatabaseIconSm className="h-5 w-5" />
           Upload sources
         </button>
       </div>

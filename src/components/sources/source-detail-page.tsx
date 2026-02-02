@@ -102,7 +102,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
           <Tabs defaultValue="analytics">
             <TabsList
               variant="line"
-              className="-mx-[23px] w-[calc(100%+46px)] border-b border-zinc-800 pl-[15px] pr-[23px] pb-0"
+              className="-mx-6 w-[calc(100%+46px)] border-b border-zinc-800 pl-4 pr-6 pb-0"
             >
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="logs">Logs</TabsTrigger>

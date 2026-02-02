@@ -46,7 +46,7 @@ function TrendBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-0.5 text-[11px] font-medium",
+        "inline-flex items-center gap-0.5 text-xs font-medium",
         color,
       )}
     >
@@ -92,7 +92,7 @@ function KpiCard({
           <p className="text-xs text-zinc-500">{subtitle ?? "\u00A0"}</p>
           <div className="flex items-center gap-2">
             {anomaly && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-400">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-400">
                 <TriangleAlert className="h-3 w-3" />
                 {anomaly}
               </span>

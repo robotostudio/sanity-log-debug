@@ -137,7 +137,7 @@ export function FilterBar() {
             placeholder="Search by URL or trace ID..."
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="h-8 w-[280px] pl-8 border-zinc-800 bg-transparent dark:bg-transparent text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500"
+            className="h-8 w-72 pl-8 border-zinc-800 bg-transparent dark:bg-transparent text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500"
           />
         </div>
         <MultiSelectFilter

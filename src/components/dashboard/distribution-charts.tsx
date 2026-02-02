@@ -310,18 +310,14 @@ export function DonutChart({ dataKey, title }: DonutChartProps) {
 
   const content = (() => {
     if (state.status === "empty") {
-      return (
-        <ChartEmpty title={title} icon={PieChartIcon} height="h-[280px]" />
-      );
+      return <ChartEmpty title={title} icon={PieChartIcon} height="h-72" />;
     }
     if (state.status === "loading") {
-      return <ChartLoading height="h-[280px]" />;
+      return <ChartLoading height="h-72" />;
     }
     const data = state.data?.[dataKey];
     if (state.status === "error" || !data) {
-      return (
-        <ChartEmpty title={title} icon={PieChartIcon} height="h-[280px]" />
-      );
+      return <ChartEmpty title={title} icon={PieChartIcon} height="h-72" />;
     }
     return <DonutChartData data={data} />;
   })();

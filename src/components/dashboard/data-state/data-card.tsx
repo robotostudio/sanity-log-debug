@@ -17,7 +17,7 @@ interface LoadingStateProps {
 }
 
 function LoadingState({
-  height = "h-[200px]",
+  height = "h-52",
   variant = "chart",
 }: LoadingStateProps) {
   if (variant === "kpi") {
@@ -78,7 +78,7 @@ function DataCardContent({
   children,
   emptyState,
   loadingState,
-  loadingHeight = "h-[200px]",
+  loadingHeight = "h-52",
   loadingVariant = "chart",
 }: DataCardContentProps) {
   const { state } = useDashboard();

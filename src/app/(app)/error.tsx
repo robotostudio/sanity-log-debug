@@ -8,7 +8,7 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+    <div className="flex min-h-96 flex-col items-center justify-center gap-4">
       <h2 className="text-lg font-medium text-zinc-100">
         Something went wrong
       </h2>
@@ -16,7 +16,7 @@ export default function ErrorPage({
       <button
         type="button"
         onClick={reset}
-        className="rounded-[8px] bg-zinc-800 px-4 py-2 text-sm hover:bg-zinc-700"
+        className="rounded-lg bg-zinc-800 px-4 py-2 text-sm hover:bg-zinc-700"
       >
         Try again
       </button>

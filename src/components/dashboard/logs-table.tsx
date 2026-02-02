@@ -76,7 +76,7 @@ function LogsTableEmpty() {
         icon={<List className="h-6 w-6 text-zinc-500" />}
         title="No log entries"
         description="Select a log file to view detailed entries"
-        className="h-[300px] py-0"
+        className="h-72 py-0"
       />
     </CardWrapper>
   );

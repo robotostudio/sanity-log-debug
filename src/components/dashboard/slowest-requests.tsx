@@ -58,7 +58,7 @@ function SlowestRequestsEmpty() {
         icon={<Gauge className="h-6 w-6 text-zinc-500" />}
         title="No request data"
         description="Select a log file to view slow requests"
-        className="h-[300px] py-0"
+        className="h-72 py-0"
       />
     </CardWrapper>
   );
@@ -87,7 +87,7 @@ function SlowestRequestsLoading() {
 function SlowestRequestsData({ data }: { data: SlowRequest[] }) {
   return (
     <CardWrapper>
-      <div className="max-h-[300px] overflow-y-auto">
+      <div className="max-h-72 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-800 hover:bg-transparent">

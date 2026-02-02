@@ -24,7 +24,7 @@ function SourceDetailSkeleton() {
       {/* Breadcrumb */}
       <div>
         <div className="h-5 w-40 animate-pulse rounded bg-zinc-800/50" />
-        <div className="mt-[31px] flex items-center gap-3">
+        <div className="mt-8 flex items-center gap-3">
           <div className="h-8 w-56 animate-pulse rounded bg-zinc-800/50" />
           <div className="h-7 w-20 animate-pulse rounded-full bg-zinc-800/50" />
         </div>
@@ -47,8 +47,8 @@ function SourceDetailSkeleton() {
 
       {/* Content skeleton */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_2fr]">
-        <div className="h-48 animate-pulse rounded-[8px] bg-zinc-800/50" />
-        <div className="h-48 animate-pulse rounded-[8px] bg-zinc-800/50" />
+        <div className="h-48 animate-pulse rounded-lg bg-zinc-800/50" />
+        <div className="h-48 animate-pulse rounded-lg bg-zinc-800/50" />
       </div>
     </div>
   );

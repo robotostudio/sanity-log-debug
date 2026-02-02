@@ -95,7 +95,7 @@ function TimeSeriesEmpty() {
         icon={<TrendingUp className="h-6 w-6 text-zinc-500" />}
         title="No time series data"
         description="Select a log file to view request trends"
-        className="h-[300px] py-0"
+        className="h-72 py-0"
       />
     </ChartCard>
   );
@@ -108,7 +108,7 @@ function TimeSeriesEmpty() {
 function TimeSeriesLoading() {
   return (
     <ChartCard>
-      <Skeleton className="h-[300px] w-full" />
+      <Skeleton className="h-72 w-full" />
     </ChartCard>
   );
 }

@@ -22,12 +22,12 @@ export function PageHeader({ title, children }: PageHeaderProps) {
 
   return (
     <div className="shrink-0">
-      <p className="text-[16px] leading-[24px]">
+      <p className="text-base leading-6">
         <span className="text-[#d4d4d8]">Sanity Logs</span>
         <span className="text-[#fafafa]">{`  /  ${pageName}`}</span>
       </p>
-      <div className="mt-[31px] flex items-center justify-between">
-        <h1 className="text-[24px] font-medium leading-[34px] text-[#fafafa]">
+      <div className="mt-8 flex items-center justify-between">
+        <h1 className="text-2xl font-medium leading-9 text-[#fafafa]">
           {title}
         </h1>
         {children && <div className="flex items-center gap-2">{children}</div>}

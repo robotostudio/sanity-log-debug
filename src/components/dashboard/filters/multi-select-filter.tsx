@@ -54,7 +54,7 @@ export function MultiSelectFilter({
         >
           {label}
           {isActive && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-100 px-1 text-[10px] font-semibold text-zinc-900">
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-100 px-1 text-xs font-semibold text-zinc-900">
               {selected.length}
             </span>
           )}
@@ -94,7 +94,7 @@ export function MultiSelectFilter({
                 key={opt}
                 htmlFor={checkboxId}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-[4px] px-2 py-1.5 text-xs",
+                  "flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs",
                   "transition-colors hover:bg-zinc-800",
                   checked ? "bg-zinc-800/60 text-zinc-100" : "text-zinc-400",
                 )}

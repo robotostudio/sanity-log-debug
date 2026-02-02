@@ -48,7 +48,7 @@ export function ProcessingJobsTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[40px]">Status</TableHead>
+          <TableHead className="w-10">Status</TableHead>
           <TableHead>Filename</TableHead>
           <TableHead className="text-right">Size</TableHead>
           <TableHead className="text-right">Records</TableHead>
@@ -62,7 +62,7 @@ export function ProcessingJobsTable({
             <TableCell>
               <StatusIcon status={job.processingStatus} />
             </TableCell>
-            <TableCell className="font-medium max-w-[300px] truncate">
+            <TableCell className="font-medium max-w-72 truncate">
               {job.filename}
             </TableCell>
             <TableCell className="text-right text-muted-foreground">

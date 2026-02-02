@@ -131,7 +131,7 @@ export function PipelineContent() {
 
 function ErrorState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[8px] border border-red-500/20 bg-red-500/5 p-12 text-center">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 p-12 text-center">
       <AlertCircle className="mb-4 h-12 w-12 text-red-400" />
       <h3 className="text-lg font-medium text-zinc-100">Connection Error</h3>
       <p className="mt-2 max-w-md text-sm text-zinc-400">
@@ -206,7 +206,7 @@ function ActiveJobCard({ job }: ActiveJobCardProps) {
   const recordCount = job.currentRecordCount ?? 0;
 
   return (
-    <div className="rounded-[8px] border border-zinc-800 bg-transparent p-4">
+    <div className="rounded-lg border border-zinc-800 bg-transparent p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-zinc-800">
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
       {/* Header */}
       <div className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
         <div className="col-span-2">Status</div>
@@ -326,7 +326,7 @@ function EmptyJobsState() {
       action={
         <Link
           href="/sources"
-          className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
         >
           Upload Data Source
         </Link>

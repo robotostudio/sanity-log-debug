@@ -30,7 +30,7 @@ export function AnalyticsContent() {
         <PageHeader title="Analytics">
           <Link
             href="/sources"
-            className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
           >
             <DatabaseIconSm className="h-4 w-4" />
             Browse sources
@@ -48,7 +48,7 @@ export function AnalyticsContent() {
         <PageHeader title="Analytics">
           <Link
             href="/sources"
-            className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
           >
             <DatabaseIconSm className="h-4 w-4" />
             Browse sources
@@ -73,7 +73,7 @@ export function AnalyticsContent() {
       <PageHeader title="Analytics">
         <Link
           href="/sources"
-          className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
         >
           <DatabaseIconSm className="h-4 w-4" />
           Browse sources

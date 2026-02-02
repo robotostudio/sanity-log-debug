@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 type DataStatus = "empty" | "loading" | "error" | "success";
 
@@ -20,16 +20,12 @@ export function AsyncState<T>({
   loading,
   errorFallback,
   children,
-}: AsyncStateProps<T>): JSX.Element {
-  if (status === "empty") return <>{empty}</>;
-  if (status === "loading") return <>{loading}</>;
+}: AsyncStateProps<T>): ReactNode {
+  if (status === "empty") return empty;
+  if (status === "loading") return loading;
   if (status === "error") {
-    return errorFallback ? (
-      <>{errorFallback(error ?? "Unknown error")}</>
-    ) : (
-      <>{empty}</>
-    );
+    return errorFallback ? errorFallback(error ?? "Unknown error") : empty;
   }
-  if (!data) return <>{empty}</>;
-  return <>{children(data)}</>;
+  if (!data) return empty;
+  return children(data);
 }

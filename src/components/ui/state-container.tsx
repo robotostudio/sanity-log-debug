@@ -32,7 +32,7 @@ export function StateContainer({
         "flex flex-col items-center justify-center text-center",
         variant === "inline" && "py-12",
         variant === "card" &&
-          "rounded-[8px] border border-zinc-800 bg-transparent py-16",
+          "rounded-lg border border-zinc-800 bg-transparent py-16",
         className,
       )}
     >

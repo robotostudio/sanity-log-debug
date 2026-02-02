@@ -43,7 +43,7 @@ export function DashboardProvider({
 
   const { data, isPending, isFetching, error } = useQuery({
     queryKey: logKeys.aggregation(selectedFile ?? "", queryString),
-    queryFn: () => apiFetcher<Aggregations>(aggUrl!),
+    queryFn: () => apiFetcher<Aggregations>(aggUrl as string),
     enabled: shouldFetch && aggUrl !== null,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,

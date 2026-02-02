@@ -54,7 +54,7 @@ function LatencyEmpty() {
         icon={<Clock className="h-6 w-6 text-zinc-500" />}
         title="No latency data"
         description="Select a log file to view distribution"
-        className="h-[300px] py-0"
+        className="h-72 py-0"
       />
     </ChartCard>
   );
@@ -67,7 +67,7 @@ function LatencyEmpty() {
 function LatencyLoading() {
   return (
     <ChartCard>
-      <Skeleton className="h-[300px] w-full" />
+      <Skeleton className="h-72 w-full" />
     </ChartCard>
   );
 }
