@@ -22,16 +22,20 @@ async function fetcher(url: string) {
 
 interface DashboardProviderProps {
   children: ReactNode;
+  fileKey?: string;
 }
 
-export function DashboardProvider({ children }: DashboardProviderProps) {
+export function DashboardProvider({
+  children,
+  fileKey,
+}: DashboardProviderProps) {
   const { queryString } = useFilters();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // URL is the single source of truth for selected file
-  const selectedFile = searchParams.get("file");
+  // Use prop if provided, otherwise fall back to URL param
+  const selectedFile = fileKey ?? searchParams.get("file");
   const prevStatusRef = useRef<DataStatus | null>(null);
   const loadingToastRef = useRef<string | number | null>(null);
 

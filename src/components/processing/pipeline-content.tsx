@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Activity,
+  AlertCircle,
   CheckCircle2,
   Clock,
   Database,
@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
+import { PageHeader } from "@/components/layout/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
+import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
 
@@ -50,8 +55,8 @@ export function PipelineContent() {
 
   if (error) {
     return (
-      <div className="space-y-8">
-        <PipelineHeader />
+      <div className="space-y-4">
+        <PageHeader title="Pipeline" />
         <ErrorState />
       </div>
     );
@@ -60,23 +65,14 @@ export function PipelineContent() {
   const stats = data?.stats ?? {};
   const recentJobs = data?.recentJobs ?? [];
   const activeJobs = data?.activeJobs ?? [];
-  const totalRecords = data?.totalRecords ?? 0;
-
   const hasActiveJobs = activeJobs.length > 0;
 
   return (
-    <div className="space-y-8">
-      <PipelineHeader />
+    <div className="space-y-4">
+      <PageHeader title="Pipeline" />
 
       {/* Metrics Overview */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-400">Overview</h2>
-          <span className="text-xs text-zinc-600">
-            {totalRecords.toLocaleString()} total records processed
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <MetricCard
             label="In Queue"
             value={stats.pending ?? 0}
@@ -104,8 +100,7 @@ export function PipelineContent() {
             loading={isLoading}
             accent="error"
           />
-        </div>
-      </section>
+      </div>
 
       {/* Active Jobs */}
       {hasActiveJobs && (
@@ -126,7 +121,7 @@ export function PipelineContent() {
       )}
 
       {/* Job History */}
-      <section>
+      <section className="mt-8">
         <div className="mb-4">
           <h2 className="text-sm font-medium text-zinc-400">Job History</h2>
           <p className="mt-0.5 text-xs text-zinc-600">
@@ -139,32 +134,12 @@ export function PipelineContent() {
   );
 }
 
-function PipelineHeader() {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2">
-        <Activity className="h-5 w-5 text-zinc-500" />
-        <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-          Pipeline
-        </h1>
-      </div>
-      <p className="text-sm text-zinc-500">
-        Monitor data ingestion and processing workflows in real-time.
-      </p>
-    </div>
-  );
-}
-
 function ErrorState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 py-16 text-center">
-      <div className="rounded-full bg-red-500/10 p-3">
-        <XCircle className="h-6 w-6 text-red-400" />
-      </div>
-      <h3 className="mt-4 text-sm font-medium text-zinc-200">
-        Connection Error
-      </h3>
-      <p className="mt-1 max-w-sm text-xs text-zinc-500">
+    <div className="flex flex-col items-center justify-center rounded-[8px] border border-red-500/20 bg-red-500/5 p-12 text-center">
+      <AlertCircle className="mb-4 h-12 w-12 text-red-400" />
+      <h3 className="text-lg font-medium text-zinc-100">Connection Error</h3>
+      <p className="mt-2 max-w-md text-sm text-zinc-400">
         Unable to fetch pipeline status. Verify your database connection and
         refresh the page.
       </p>
@@ -195,32 +170,34 @@ function MetricCard({
   };
 
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          {label}
-        </span>
-        <Icon
-          className={cn(
-            "h-4 w-4 text-zinc-600",
-            pulse && "animate-pulse text-zinc-400",
-            accent && accentStyles[accent],
-          )}
-        />
-      </div>
-      {loading ? (
-        <div className="mt-2 h-8 w-16 animate-pulse rounded bg-zinc-800" />
-      ) : (
-        <p
-          className={cn(
-            "mt-2 text-2xl font-semibold tabular-nums text-zinc-100",
-            accent && accentStyles[accent],
-          )}
-        >
-          {value.toLocaleString()}
-        </p>
-      )}
-    </div>
+    <Card className="border-zinc-800 bg-transparent">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center justify-between text-xs font-medium uppercase tracking-wider text-zinc-500">
+          <span>{label}</span>
+          <Icon
+            className={cn(
+              "h-4 w-4 text-zinc-600",
+              pulse && "animate-pulse text-zinc-400",
+              accent && accentStyles[accent],
+            )}
+          />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-16" />
+        ) : (
+          <p
+            className={cn(
+              "font-mono text-2xl font-medium text-zinc-100",
+              accent && accentStyles[accent],
+            )}
+          >
+            {value.toLocaleString()}
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -234,7 +211,7 @@ function ActiveJobCard({ job }: ActiveJobCardProps) {
   const recordCount = job.currentRecordCount ?? 0;
 
   return (
-    <div className="rounded-md border border-zinc-800 bg-zinc-900 p-4">
+    <div className="rounded-[8px] border border-zinc-800 bg-transparent p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -249,7 +226,7 @@ function ActiveJobCard({ job }: ActiveJobCardProps) {
             <span>Uploaded {formatRelativeTime(job.uploadedAt)}</span>
           </div>
         </div>
-        <StatusBadge status={job.processingStatus} />
+        <ProcessingStatusBadge status={job.processingStatus} />
       </div>
 
       {/* Progress indicator */}
@@ -287,10 +264,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
     return (
       <div className="space-y-2">
         {SKELETON_ROW_IDS.map((id) => (
-          <div
-            key={id}
-            className="h-14 animate-pulse rounded-md bg-zinc-800/50"
-          />
+          <Skeleton key={id} className="h-14" />
         ))}
       </div>
     );
@@ -301,94 +275,80 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-zinc-800">
+    <div className="overflow-hidden rounded-[8px] border border-zinc-800">
       {/* Header */}
-      <div className="grid grid-cols-12 gap-4 border-b border-zinc-800 bg-zinc-900/50 px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        <div className="col-span-1">Status</div>
-        <div className="col-span-4">File</div>
+      <div className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <div className="col-span-2">Status</div>
+        <div className="col-span-3">File</div>
         <div className="col-span-2 text-right">Size</div>
         <div className="col-span-2 text-right">Records</div>
         <div className="col-span-3 text-right">Processed</div>
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-zinc-800/50">
-        {jobs.map((job) => (
-          <div
-            key={job.id}
-            className="grid grid-cols-12 gap-4 px-4 py-3 text-sm transition-colors hover:bg-zinc-800/30"
-          >
-            <div className="col-span-1 flex items-center">
-              <StatusIcon status={job.processingStatus} />
-            </div>
-            <div className="col-span-4 flex items-center gap-2 truncate">
-              <span className="truncate text-zinc-200">{job.filename}</span>
-            </div>
-            <div className="col-span-2 flex items-center justify-end text-zinc-500">
-              {formatFileSize(job.size)}
-            </div>
-            <div className="col-span-2 flex items-center justify-end tabular-nums text-zinc-300">
-              {job.recordCount?.toLocaleString() ?? "—"}
-            </div>
-            <div className="col-span-3 flex items-center justify-end text-zinc-500">
-              {job.processedAt ? formatDate(job.processedAt) : "—"}
-            </div>
+      {jobs.map((job) => (
+        <Link
+          key={job.id}
+          href={`/sources/${job.id}`}
+          className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04] cursor-pointer"
+        >
+          <div className="col-span-2 flex items-center gap-2">
+            <div
+              className={cn(
+                "h-2.5 w-2.5 rounded-full",
+                JOB_STATUS_DOT_COLORS[job.processingStatus] ??
+                  "bg-zinc-400",
+              )}
+            />
+            <span className="text-sm text-zinc-300">
+              {JOB_STATUS_LABELS[job.processingStatus] ?? "Unknown"}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className="col-span-3 flex items-center gap-2 truncate">
+            <span className="truncate text-zinc-200">{job.filename}</span>
+          </div>
+          <div className="col-span-2 flex items-center justify-end text-zinc-500">
+            {formatFileSize(job.size)}
+          </div>
+          <div className="col-span-2 flex items-center justify-end tabular-nums text-zinc-300">
+            {job.recordCount?.toLocaleString() ?? "—"}
+          </div>
+          <div className="col-span-3 flex items-center justify-end text-zinc-500">
+            {job.processedAt ? formatDate(job.processedAt) : "—"}
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
 
 function EmptyJobsState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 py-16 text-center">
-      <div className="rounded-full bg-zinc-800 p-3">
-        <Database className="h-6 w-6 text-zinc-500" />
-      </div>
-      <h3 className="mt-4 text-sm font-medium text-zinc-200">
-        No processing history
-      </h3>
-      <p className="mt-1 max-w-sm text-xs text-zinc-500">
-        Upload your first data source to begin ingesting records into the
-        system.
-      </p>
-      <Link
-        href="/sources"
-        className="mt-4 rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700"
-      >
-        Upload Data Source
-      </Link>
-    </div>
+    <StateContainer
+      variant="card"
+      icon={<Database className="h-6 w-6 text-zinc-500" />}
+      title="No processing history"
+      description="Upload your first data source to begin ingesting records into the system."
+      action={
+        <Link
+          href="/sources"
+          className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+        >
+          Upload Data Source
+        </Link>
+      }
+    />
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { label: string; className: string }> = {
-    pending: {
-      label: "Queued",
-      className: "bg-zinc-800 text-zinc-400",
-    },
-    processing: {
-      label: "Processing",
-      className: "bg-zinc-700 text-zinc-200",
-    },
-    ready: {
-      label: "Complete",
-      className: "bg-green-500/10 text-green-400",
-    },
-    failed: {
-      label: "Failed",
-      className: "bg-red-500/10 text-red-400",
-    },
-  };
-
-  const { label, className } = config[status] ?? config.pending;
+function ProcessingStatusBadge({ status }: { status: string }) {
+  const defaultConfig = PROCESSING_STATUS_BG.pending;
+  const { label, className } = PROCESSING_STATUS_BG[status] ?? defaultConfig;
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded border px-2 py-0.5 text-xs font-medium",
         className,
       )}
     >
@@ -397,16 +357,19 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function StatusIcon({ status }: { status: string }) {
-  const icons: Record<string, React.ReactNode> = {
-    pending: <Clock className="h-4 w-4 text-zinc-500" />,
-    processing: <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />,
-    ready: <CheckCircle2 className="h-4 w-4 text-green-400" />,
-    failed: <XCircle className="h-4 w-4 text-red-400" />,
-  };
+const JOB_STATUS_DOT_COLORS: Record<string, string> = {
+  pending: "bg-zinc-400",
+  processing: "bg-amber-400",
+  ready: "bg-emerald-400",
+  failed: "bg-red-400",
+};
 
-  return icons[status] ?? icons.pending;
-}
+const JOB_STATUS_LABELS: Record<string, string> = {
+  pending: "Queued",
+  processing: "Processing",
+  ready: "Complete",
+  failed: "Failed",
+};
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B";

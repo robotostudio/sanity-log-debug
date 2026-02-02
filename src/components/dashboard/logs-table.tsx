@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import {
   Table,
   TableBody,
@@ -58,7 +59,7 @@ function CardWrapper({
   total?: number;
 }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-zinc-400">
@@ -83,13 +84,12 @@ function CardWrapper({
 function LogsTableEmpty() {
   return (
     <CardWrapper>
-      <div className="flex h-[300px] flex-col items-center justify-center text-center">
-        <List className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No log entries</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to view detailed entries
-        </p>
-      </div>
+      <StateContainer
+        icon={<List className="h-6 w-6 text-zinc-500" />}
+        title="No log entries"
+        description="Select a log file to view detailed entries"
+        className="h-[300px] py-0"
+      />
     </CardWrapper>
   );
 }

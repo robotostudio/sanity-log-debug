@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { DatabaseIconSm } from "@/components/icons";
 import { PageHeader } from "@/components/layout/page-header";
+import { StateContainer } from "@/components/ui/state-container";
 import { useDashboard } from "./data-state";
 import {
   DonutChart,
@@ -53,16 +54,13 @@ export function AnalyticsContent() {
             Browse sources
           </Link>
         </PageHeader>
-        <div className="flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 p-12 text-center">
-          <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
-          <h3 className="text-lg font-medium text-zinc-100">
-            Error Loading Data
-          </h3>
-          <p className="mt-2 text-sm text-zinc-400 max-w-md">
-            {state.error ??
-              "An unexpected error occurred while loading the analytics data."}
-          </p>
-        </div>
+        <StateContainer
+          variant="card"
+          icon={<AlertCircle className="h-6 w-6 text-red-400" />}
+          iconBg="bg-red-500/10"
+          title="Error Loading Data"
+          description={state.error ?? "An unexpected error occurred while loading the analytics data."}
+        />
       </div>
     );
   }

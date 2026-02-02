@@ -79,29 +79,30 @@ function MultiSelectFilter({
         )
       : options;
 
+  const isActive = selected.length > 0;
+
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           className={cn(
-            "h-8 px-3 border-zinc-800 bg-zinc-900 text-xs text-zinc-300",
-            "hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-100",
+            "h-8 gap-1.5 border border-zinc-800 bg-transparent px-3 text-xs",
+            "hover:border-zinc-700 hover:bg-zinc-800/50 hover:text-zinc-100",
             "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
-            selected.length > 0 && "border-zinc-600 bg-zinc-800",
+            isActive
+              ? "border-zinc-600 bg-zinc-800/60 text-zinc-100"
+              : "text-zinc-400",
           )}
         >
           {label}
-          {selected.length > 0 && (
-            <Badge
-              variant="secondary"
-              className="ml-1.5 h-4 rounded-sm px-1 text-[10px] bg-zinc-700 text-zinc-200"
-            >
+          {isActive && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-100 px-1 text-[10px] font-semibold text-zinc-900">
               {selected.length}
-            </Badge>
+            </span>
           )}
-          <ChevronDown className="ml-1 h-3 w-3 text-zinc-500" />
+          <ChevronDown className={cn("ml-0.5 h-3 w-3", isActive ? "text-zinc-400" : "text-zinc-600")} />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -132,30 +133,30 @@ function MultiSelectFilter({
                 key={opt}
                 htmlFor={checkboxId}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs",
+                  "flex cursor-pointer items-center gap-2 rounded-[4px] px-2 py-1.5 text-xs",
                   "transition-colors hover:bg-zinc-800",
-                  checked ? "text-zinc-100" : "text-zinc-400",
+                  checked ? "bg-zinc-800/60 text-zinc-100" : "text-zinc-400",
                 )}
               >
                 <Checkbox
                   id={checkboxId}
                   checked={checked}
                   onCheckedChange={toggleOption}
-                  className="h-3.5 w-3.5 border-zinc-600 data-[state=checked]:bg-zinc-600 data-[state=checked]:border-zinc-600"
+                  className="h-3.5 w-3.5 border-zinc-600 data-[state=checked]:bg-zinc-100 data-[state=checked]:border-zinc-100 data-[state=checked]:text-zinc-900"
                 />
                 <span className="font-mono">{opt}</span>
               </label>
             );
           })}
         </div>
-        {selected.length > 0 && (
+        {isActive && (
           <Button
             variant="ghost"
             size="sm"
-            className="mt-2 h-6 w-full text-xs text-zinc-500 hover:text-zinc-300"
+            className="mt-2 h-6 w-full text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
             onClick={() => onChange([])}
           >
-            Clear
+            Clear all
           </Button>
         )}
       </PopoverContent>
@@ -225,8 +226,49 @@ export function FilterBar() {
 
   return (
     <div className="space-y-3">
-      {/* Row 1: Search + Date Presets + Custom Date */}
-      <div className="flex flex-wrap items-center gap-3">
+      {/* Row 1: Time scope — prominent top-level control */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-medium text-zinc-500">Time range</span>
+        <DatePresets
+          activePreset={activePreset}
+          onPresetSelect={applyDatePreset}
+        />
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 border border-zinc-800 bg-transparent px-3 text-xs",
+                "hover:bg-transparent hover:border-zinc-700 hover:text-zinc-100",
+                "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
+                activePreset === "custom"
+                  ? "border-zinc-600 bg-zinc-800/60 text-zinc-100"
+                  : "text-zinc-400",
+              )}
+            >
+              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+              {activePreset === "custom" ? dateLabel : "Custom"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto border-zinc-700 bg-zinc-900 p-0"
+            align="start"
+          >
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={handleDateRangeSelect}
+              numberOfMonths={2}
+              defaultMonth={new Date(2026, 0)}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {/* Row 2: Search + Multi-select filters */}
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           {isFiltering ? (
             <Loader2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400 animate-spin" />
@@ -237,62 +279,9 @@ export function FilterBar() {
             placeholder="Search by URL or trace ID..."
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className={cn(
-              "h-8 w-[280px] pl-8 border-zinc-800 bg-zinc-900 text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
-              isFiltering && "opacity-70",
-            )}
+            className="h-8 w-[280px] pl-8 border-zinc-800 bg-transparent dark:bg-transparent text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500"
           />
         </div>
-
-        {/* Filtering indicator */}
-        {isFiltering && (
-          <span className="text-xs text-zinc-500 animate-pulse">
-            Filtering...
-          </span>
-        )}
-
-        <div className="flex items-center gap-2 ml-auto">
-          <DatePresets
-            activePreset={activePreset}
-            onPresetSelect={applyDatePreset}
-          />
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "h-8 px-3 border-zinc-800 bg-zinc-900 text-xs",
-                  "hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-100",
-                  "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
-                  activePreset === "custom"
-                    ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                    : "text-zinc-400",
-                )}
-              >
-                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
-                {activePreset === "custom" ? dateLabel : "Custom"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-auto border-zinc-700 bg-zinc-900 p-0"
-              align="end"
-            >
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={handleDateRangeSelect}
-                numberOfMonths={2}
-                defaultMonth={new Date(2026, 0)}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      {/* Row 2: Multi-select filters */}
-      <div className="flex flex-wrap items-center gap-2">
         <MultiSelectFilter
           label="Method"
           options={METHOD_OPTIONS}
@@ -330,25 +319,27 @@ export function FilterBar() {
           onChange={(val) => setFilters({ severity: val })}
         />
 
-        {/* Studio toggle */}
-        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-zinc-800">
-          <span className="text-xs text-zinc-500 mr-1">Studio:</span>
-          {(["all", "true", "false"] as const).map((opt) => (
-            <button
-              type="button"
-              key={opt}
-              className={cn(
-                "h-7 px-2 rounded text-xs font-medium transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
-                filters.studio === opt
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50",
-              )}
-              onClick={() => setFilters({ studio: opt })}
-            >
-              {opt === "all" ? "All" : opt === "true" ? "Yes" : "No"}
-            </button>
-          ))}
+        {/* Studio origin toggle */}
+        <div className="flex items-center gap-0.5 ml-2 pl-2 border-l border-zinc-800">
+          <span className="text-xs text-zinc-500 mr-1.5">Origin:</span>
+          <div className="flex items-center rounded-[8px] border border-zinc-800 p-0.5">
+            {(["all", "true", "false"] as const).map((opt) => (
+              <button
+                type="button"
+                key={opt}
+                className={cn(
+                  "h-6 px-2.5 rounded-[6px] text-xs font-medium transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
+                  filters.studio === opt
+                    ? "bg-zinc-100 text-zinc-900"
+                    : "text-zinc-500 hover:text-zinc-300",
+                )}
+                onClick={() => setFilters({ studio: opt })}
+              >
+                {opt === "all" ? "All" : opt === "true" ? "Studio" : "External"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -439,11 +430,11 @@ export function FilterBar() {
             />
           )}
 
-          {/* Studio chip */}
+          {/* Origin chip */}
           {filters.studio !== "all" && (
             <FilterChip
-              label="Studio"
-              value={filters.studio === "true" ? "Yes" : "No"}
+              label="Origin"
+              value={filters.studio === "true" ? "Studio" : "External"}
               onRemove={() => setFilters({ studio: "all" })}
             />
           )}

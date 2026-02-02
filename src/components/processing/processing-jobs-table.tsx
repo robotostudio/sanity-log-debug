@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Clock, Cog, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Database, Loader2, XCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -9,6 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import type { File } from "@/lib/db/schema";
 
 interface ProcessingJobsTableProps {
@@ -26,7 +28,7 @@ export function ProcessingJobsTable({
     return (
       <div className="space-y-2">
         {SKELETON_IDS.map((id) => (
-          <div key={id} className="h-12 bg-muted animate-pulse rounded" />
+          <Skeleton key={id} className="h-12" />
         ))}
       </div>
     );
@@ -34,9 +36,11 @@ export function ProcessingJobsTable({
 
   if (jobs.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No processing jobs yet. Upload a file to get started.
-      </div>
+      <StateContainer
+        icon={<Database className="h-6 w-6 text-zinc-500" />}
+        title="No processing jobs yet"
+        description="Upload a file to get started."
+      />
     );
   }
 
@@ -83,15 +87,15 @@ export function ProcessingJobsTable({
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case "pending":
-      return <Clock className="h-4 w-4 text-yellow-500" />;
+      return <Clock className="h-4 w-4 text-zinc-500" />;
     case "processing":
-      return <Cog className="h-4 w-4 text-blue-500 animate-spin" />;
+      return <Loader2 className="h-4 w-4 animate-spin text-amber-400" />;
     case "ready":
-      return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      return <CheckCircle2 className="h-4 w-4 text-green-400" />;
     case "failed":
-      return <XCircle className="h-4 w-4 text-destructive" />;
+      return <XCircle className="h-4 w-4 text-red-400" />;
     default:
-      return <Clock className="h-4 w-4 text-muted-foreground" />;
+      return <Clock className="h-4 w-4 text-zinc-500" />;
   }
 }
 

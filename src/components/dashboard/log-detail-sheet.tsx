@@ -111,7 +111,7 @@ export function LogDetailSheet({
         <SheetHeader className="px-6 pt-5 pb-0">
           <SheetTitle className="flex items-center gap-2.5 text-sm text-zinc-200">
             <StatusBadge status={record.body.status} />
-            <span className="font-mono font-semibold">
+            <span className="font-mono font-medium">
               {record.body.method}
             </span>
             <SeverityBadge severity={record.severityText} />
@@ -123,12 +123,12 @@ export function LogDetailSheet({
 
         <div className="space-y-5 px-6 pt-5 pb-8">
           {/* Duration hero */}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+          <div className="rounded-[8px] border border-zinc-800 bg-transparent px-4 py-3">
             <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
               Duration
             </span>
             <div
-              className={`mt-0.5 font-mono text-3xl font-bold tracking-tight ${durationColor}`}
+              className={`mt-0.5 font-mono text-3xl font-medium tracking-tight ${durationColor}`}
             >
               {formatDuration(record.body.duration)}
             </div>
@@ -139,7 +139,7 @@ export function LogDetailSheet({
             <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
               Path
             </span>
-            <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-300 break-all">
+            <div className="rounded-[8px] border border-zinc-800 bg-zinc-900/40 px-3 py-2 font-mono text-[12px] leading-relaxed text-zinc-300 break-all">
               {basePath}
             </div>
           </div>
@@ -150,7 +150,7 @@ export function LogDetailSheet({
               <span className="text-[10px] font-medium uppercase tracking-widest text-emerald-500">
                 GROQ Query
               </span>
-              <pre className="rounded-md border border-emerald-900/40 bg-emerald-950/30 px-3 py-2.5 font-mono text-[12px] leading-relaxed text-emerald-300 whitespace-pre-wrap break-all max-h-56 overflow-y-auto">
+              <pre className="rounded-[8px] border border-emerald-900/40 bg-emerald-950/30 px-3 py-2.5 font-mono text-[12px] leading-relaxed text-emerald-300 whitespace-pre-wrap break-all max-h-56 overflow-y-auto">
                 {groqQuery}
               </pre>
             </div>
@@ -162,7 +162,7 @@ export function LogDetailSheet({
               <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
                 Parameters
               </span>
-              <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-3 py-2 space-y-1.5">
+              <div className="rounded-[8px] border border-zinc-800 bg-zinc-900/40 px-3 py-2 space-y-1.5">
                 {Object.entries(queryParams).map(([k, v]) => (
                   <div key={k} className="flex items-start gap-2 text-[12px]">
                     <span className="shrink-0 font-mono font-medium text-cyan-400">

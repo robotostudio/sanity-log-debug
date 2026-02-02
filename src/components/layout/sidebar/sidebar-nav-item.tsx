@@ -47,8 +47,10 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
       {isCollapsed && (
         <div
           className={cn(
-            "absolute left-full ml-2 rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-100 opacity-0 transition-opacity",
-            "pointer-events-none group-hover:opacity-100",
+            "absolute left-full ml-2 rounded-md bg-zinc-800 px-2 py-1 text-xs font-medium text-zinc-100",
+            "pointer-events-none opacity-0 translate-x-1 scale-95",
+            "transition-all duration-75 ease-out will-change-[opacity,transform]",
+            "group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100",
             "whitespace-nowrap z-50",
           )}
         >

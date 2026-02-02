@@ -146,3 +146,24 @@
     transform: translateX(0);
   }
 }
+
+/* Recharts Brush styling */
+.recharts-brush-slide {
+  fill: rgba(59, 130, 246, 0.08);
+  stroke: none;
+}
+
+.recharts-brush-traveller rect {
+  fill: #3f3f46;
+  rx: 3;
+  ry: 3;
+}
+
+.recharts-brush-traveller line {
+  stroke: #71717a;
+}
+
+.recharts-brush .recharts-cartesian-axis-tick text {
+  fill: #52525b;
+  font-size: 9px;
+}

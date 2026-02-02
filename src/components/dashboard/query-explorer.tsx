@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import {
   Table,
   TableBody,
@@ -44,7 +45,7 @@ function CardWrapper({
   showSearch?: boolean;
 }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-zinc-400">
@@ -55,7 +56,7 @@ function CardWrapper({
               placeholder="Filter query ID..."
               value={searchValue}
               onChange={(e) => onSearchChange?.(e.target.value)}
-              className="h-7 w-48 border-zinc-700 bg-zinc-950 text-xs text-zinc-300"
+              className="h-7 w-48 border-zinc-800 bg-transparent dark:bg-transparent text-xs text-zinc-300 placeholder:text-zinc-500 focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500"
             />
           ) : null}
         </div>
@@ -72,13 +73,12 @@ function CardWrapper({
 function QueryExplorerEmpty() {
   return (
     <CardWrapper>
-      <div className="flex h-[200px] flex-col items-center justify-center text-center">
-        <Database className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No query data</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to explore GROQ queries
-        </p>
-      </div>
+      <StateContainer
+        icon={<Database className="h-6 w-6 text-zinc-500" />}
+        title="No query data"
+        description="Select a log file to explore GROQ queries"
+        className="h-[200px] py-0"
+      />
     </CardWrapper>
   );
 }

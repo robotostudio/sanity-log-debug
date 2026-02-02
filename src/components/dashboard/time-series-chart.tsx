@@ -14,8 +14,18 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import type { TimeSeriesBucket } from "@/lib/types";
+import {
+  ChartTooltipWrapper,
+  TooltipDot,
+  AreaGradientDefs,
+  GRID_PROPS,
+  AXIS_TICK_STYLE,
+  AXIS_STROKE,
+  ANIMATION_DEFAULTS,
+} from "./chart-config";
 import { useDashboard } from "./data-state";
 
 // ============================================================================
@@ -31,23 +41,20 @@ interface TooltipProps {
 function CustomTooltip({ active, payload, label }: TooltipProps) {
   if (!active || !payload) return null;
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900 p-2.5 text-xs shadow-lg">
+    <ChartTooltipWrapper>
       <p className="mb-1.5 font-mono text-zinc-400">
-        {label ? format(parseISO(label), "MMM d, HH:mm") : ""}
+        {label ? (() => { try { return format(parseISO(label), "MMM d, HH:mm"); } catch { return label; } })() : ""}
       </p>
       {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center gap-2">
-          <div
-            className="h-2 w-2 rounded-full"
-            style={{ background: p.color }}
-          />
+          <TooltipDot color={p.color} />
           <span className="text-zinc-300">{p.dataKey.toUpperCase()}</span>
           <span className="ml-auto font-mono text-zinc-100">
             {p.value.toLocaleString()}
           </span>
         </div>
       ))}
-    </div>
+    </ChartTooltipWrapper>
   );
 }
 
@@ -57,7 +64,7 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
 
 function ChartCard({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-400">
           Requests Over Time
@@ -75,13 +82,12 @@ function ChartCard({ children }: { children: React.ReactNode }) {
 function TimeSeriesEmpty() {
   return (
     <ChartCard>
-      <div className="flex h-[300px] flex-col items-center justify-center text-center">
-        <TrendingUp className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No time series data</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to view request trends
-        </p>
-      </div>
+      <StateContainer
+        icon={<TrendingUp className="h-6 w-6 text-zinc-500" />}
+        title="No time series data"
+        description="Select a log file to view request trends"
+        className="h-[300px] py-0"
+      />
     </ChartCard>
   );
 }
@@ -107,7 +113,8 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
     <ChartCard>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+          <AreaGradientDefs />
+          <CartesianGrid {...GRID_PROPS} />
           <XAxis
             dataKey="hour"
             tickFormatter={(v) => {
@@ -117,49 +124,50 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
                 return v;
               }
             }}
-            stroke="#52525b"
-            tick={{ fontSize: 10, fill: "#71717a" }}
+            stroke={AXIS_STROKE}
+            tick={AXIS_TICK_STYLE}
             interval="preserveStartEnd"
             minTickGap={60}
           />
           <YAxis
-            stroke="#52525b"
-            tick={{ fontSize: 10, fill: "#71717a" }}
+            stroke={AXIS_STROKE}
+            tick={AXIS_TICK_STYLE}
             tickFormatter={(v) => v.toLocaleString()}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} isAnimationActive={false} cursor={{ stroke: "#52525b", strokeDasharray: "4 4" }} />
           <Area
             type="monotone"
-            dataKey="info"
+            dataKey="error"
             stackId="1"
-            stroke={SEVERITY_COLORS.INFO}
-            fill={SEVERITY_COLORS.INFO}
-            fillOpacity={0.3}
-            isAnimationActive={false}
+            stroke={SEVERITY_COLORS.ERROR}
+            fill="url(#gradient-error)"
+            {...ANIMATION_DEFAULTS}
+            activeDot={{ r: 4, fill: SEVERITY_COLORS.ERROR, stroke: "#18181b", strokeWidth: 2 }}
           />
           <Area
             type="monotone"
             dataKey="warn"
             stackId="1"
             stroke={SEVERITY_COLORS.WARN}
-            fill={SEVERITY_COLORS.WARN}
-            fillOpacity={0.4}
-            isAnimationActive={false}
+            fill="url(#gradient-warn)"
+            {...ANIMATION_DEFAULTS}
+            activeDot={{ r: 4, fill: SEVERITY_COLORS.WARN, stroke: "#18181b", strokeWidth: 2 }}
           />
           <Area
             type="monotone"
-            dataKey="error"
+            dataKey="info"
             stackId="1"
-            stroke={SEVERITY_COLORS.ERROR}
-            fill={SEVERITY_COLORS.ERROR}
-            fillOpacity={0.5}
-            isAnimationActive={false}
+            stroke={SEVERITY_COLORS.INFO}
+            fill="url(#gradient-info)"
+            {...ANIMATION_DEFAULTS}
+            activeDot={{ r: 4, fill: SEVERITY_COLORS.INFO, stroke: "#18181b", strokeWidth: 2 }}
           />
           <Brush
             dataKey="hour"
-            height={20}
-            stroke="#52525b"
-            fill="#18181b"
+            height={28}
+            stroke="#3f3f46"
+            fill="#0a0a0a"
+            travellerWidth={10}
             tickFormatter={(v) => {
               try {
                 return format(parseISO(v), "M/d");

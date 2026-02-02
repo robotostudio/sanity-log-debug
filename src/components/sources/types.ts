@@ -7,11 +7,23 @@ export type ProcessingStatus =
   | "legacy";
 
 export interface Source {
+  id: string;
   key: string;
   size: number;
   lastModified: string;
   processingStatus?: ProcessingStatus;
   recordCount?: number | null;
+}
+
+export interface SourceDetail {
+  id: string;
+  key: string;
+  filename: string;
+  size: number;
+  uploadedAt: string;
+  processingStatus: ProcessingStatus;
+  recordCount: number | null;
+  processedAt: string | null;
 }
 
 export interface UploadProgress {

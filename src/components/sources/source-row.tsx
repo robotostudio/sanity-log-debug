@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnalyticsNavIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { ProcessingStatus, Source } from "./types";
-import { formatBytes, getFileName } from "./utils";
+import { formatBytes, formatSourceName, getFileName } from "./utils";
 
 interface SourceRowProps {
   source: Source;
@@ -72,18 +72,22 @@ function AnalyticsIconSmall() {
 }
 
 export function SourceRow({ source, onDelete }: SourceRowProps) {
-  const fileName = getFileName(source.key);
+  const rawFileName = getFileName(source.key);
+  const displayName = formatSourceName(rawFileName);
   const isReady = source.processingStatus === "ready";
   const isProcessing =
     source.processingStatus === "processing" ||
     source.processingStatus === "pending";
 
   return (
-    <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]">
+    <Link
+      href={`/sources/${source.id}`}
+      className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]"
+    >
       {/* Name + time */}
       <div className="flex flex-col gap-0.5 min-w-0 pr-4">
         <p className="truncate text-[16px] leading-[24px] text-[#f4f4f5]">
-          {fileName}
+          {displayName}
         </p>
         <p className="text-[16px] leading-[24px] text-[#a1a1aa]">
           {formatRelativeTime(source.lastModified)}
@@ -125,26 +129,17 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
 
       {/* View Analytics */}
       <div>
-        {isReady ? (
-          <Link
-            href={`/analytics?file=${encodeURIComponent(source.key)}`}
-            className="inline-flex items-center gap-2 text-[16px] leading-[24px] text-[#f4f4f5] transition-colors hover:text-white"
-          >
-            <AnalyticsIconSmall />
-            View Analytics
-          </Link>
-        ) : (
-          <div
-            className={cn(
-              "inline-flex items-center gap-2 text-[16px] leading-[24px] text-[#a1a1aa]",
-              isProcessing && "opacity-40",
-            )}
-          >
-            <AnalyticsIconSmall />
-            View Analytics
-          </div>
-        )}
+        <div
+          className={cn(
+            "inline-flex items-center gap-2 text-[16px] leading-[24px] text-[#f4f4f5]",
+            !isReady && "text-[#a1a1aa]",
+            isProcessing && "opacity-40",
+          )}
+        >
+          <AnalyticsIconSmall />
+          View Analytics
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

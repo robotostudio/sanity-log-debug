@@ -15,28 +15,44 @@ export default function PipelinePage() {
 }
 
 const PIPELINE_SKELETON_IDS = ["kpi-0", "kpi-1", "kpi-2", "kpi-3"];
+const TABLE_SKELETON_IDS = [
+  "tskel-0",
+  "tskel-1",
+  "tskel-2",
+  "tskel-3",
+  "tskel-4",
+];
 
 function PipelineSkeleton() {
   return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <div>
-        <div className="h-8 w-32 animate-pulse rounded bg-zinc-800/50" />
-        <div className="mt-2 h-4 w-64 animate-pulse rounded bg-zinc-800/50" />
+    <div className="space-y-4">
+      {/* Header skeleton matching PageHeader structure */}
+      <div className="shrink-0">
+        <div className="h-6 w-40 animate-pulse rounded bg-zinc-800/50" />
+        <div className="mt-[31px] h-[34px] w-32 animate-pulse rounded bg-zinc-800/50" />
       </div>
 
       {/* KPI cards skeleton */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {PIPELINE_SKELETON_IDS.map((id) => (
           <div
             key={id}
-            className="h-24 animate-pulse rounded-xl bg-zinc-800/50"
+            className="h-24 animate-pulse rounded-xl border border-zinc-800 bg-transparent"
           />
         ))}
       </div>
 
       {/* Table skeleton */}
-      <div className="h-64 animate-pulse rounded-xl bg-zinc-800/50" />
+      <div className="overflow-hidden rounded-[8px] border border-zinc-800">
+        {TABLE_SKELETON_IDS.map((id) => (
+          <div
+            key={id}
+            className="border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
+          >
+            <div className="h-5 w-3/4 animate-pulse rounded bg-zinc-800/50" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

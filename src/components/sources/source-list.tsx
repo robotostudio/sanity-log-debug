@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "./empty-state";
 import { SourceRow } from "./source-row";
 import type { Source } from "./types";
@@ -34,14 +35,14 @@ export function SourceListSkeleton() {
           className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
         >
           <div className="flex flex-col gap-1 pr-4">
-            <div className="h-5 w-3/4 animate-pulse rounded bg-zinc-800/50" />
-            <div className="h-5 w-1/3 animate-pulse rounded bg-zinc-800/50" />
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-1/3" />
           </div>
-          <div className="h-5 w-2/3 animate-pulse rounded bg-zinc-800/50" />
-          <div className="h-5 w-3/4 animate-pulse rounded bg-zinc-800/50" />
-          <div className="h-5 w-2/3 animate-pulse rounded bg-zinc-800/50" />
-          <div className="h-5 w-2/3 animate-pulse rounded bg-zinc-800/50" />
-          <div className="h-5 w-3/4 animate-pulse rounded bg-zinc-800/50" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-3/4" />
         </div>
       ))}
     </div>

@@ -19,14 +19,14 @@ export function FilterChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md bg-zinc-800 px-2 py-1 text-xs text-zinc-300",
+        "group inline-flex items-center gap-1.5 rounded-[8px] border border-zinc-700 bg-transparent px-2.5 py-1 text-xs text-zinc-200",
         "animate-in fade-in-0 zoom-in-95 duration-150",
         className,
       )}
     >
       {value ? (
         <>
-          <span className="text-zinc-500">{label}:</span>
+          <span className="text-zinc-400">{label}:</span>
           <span className="font-medium">{value}</span>
         </>
       ) : (
@@ -35,7 +35,7 @@ export function FilterChip({
       <button
         type="button"
         onClick={onRemove}
-        className="ml-0.5 rounded p-0.5 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+        className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-red-500/20 hover:text-red-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
         aria-label={`Remove ${label} filter`}
       >
         <X className="h-3 w-3" />
@@ -63,7 +63,7 @@ export function FilterChipsContainer({
         <button
           type="button"
           onClick={onClearAll}
-          className="ml-2 text-xs text-zinc-500 transition-colors hover:text-zinc-300 focus-visible:outline-none focus-visible:underline"
+          className="ml-2 text-xs text-red-400/70 transition-colors hover:text-red-400 focus-visible:outline-none focus-visible:underline"
         >
           Clear all
         </button>
