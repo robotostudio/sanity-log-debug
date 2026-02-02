@@ -1,37 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import useSWR, { mutate } from "swr";
+import { apiFetcher, apiRequest } from "@/lib/api-client";
+import { fileKeys } from "@/lib/query-keys";
 import type { Source } from "./types";
 import { useUpload } from "./upload-provider";
 
 const POLL_INTERVAL_MS = 2000;
 const FILES_API_ENDPOINT = "/api/files";
 
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    throw new Error(
-      `Failed to fetch files: ${res.status} ${res.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
-    );
-  }
-  return res.json();
-}
-
 export function useSources() {
   const { isUploading, uploadProgress, uploadFile } = useUpload();
+  const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useSWR<{ files: Source[] }>(
-    FILES_API_ENDPOINT,
-    fetcher,
-  );
+  const { data, isPending, error } = useQuery({
+    queryKey: fileKeys.list(),
+    queryFn: () => apiFetcher<{ files: Source[] }>(FILES_API_ENDPOINT),
+  });
 
-  // Track if we had processing sources on previous render to catch status transitions
-  const hadProcessingSourcesRef = useRef(false);
-
-  // Determine if we should poll based on whether any sources are processing
   const hasProcessingSources = useMemo(() => {
     return data?.files?.some(
       (f) =>
@@ -39,57 +27,56 @@ export function useSources() {
     );
   }, [data?.files]);
 
-  // When processing completes (transitions from processing to done/failed), revalidate once
-  // to ensure we capture the final status
-  useEffect(() => {
-    if (hadProcessingSourcesRef.current && !hasProcessingSources) {
-      // Processing just finished - do one final revalidation to catch the status
-      mutate(FILES_API_ENDPOINT);
-    }
-    hadProcessingSourcesRef.current = hasProcessingSources ?? false;
-  }, [hasProcessingSources]);
+  // Conditional polling when there are processing sources
+  useQuery({
+    queryKey: [...fileKeys.list(), "polling"],
+    queryFn: () => apiFetcher<{ files: Source[] }>(FILES_API_ENDPOINT),
+    enabled: hasProcessingSources ?? false,
+    refetchInterval: POLL_INTERVAL_MS,
+  });
 
-  // Poll for updates when sources are processing
-  useSWR<{ files: Source[] }>(
-    hasProcessingSources ? FILES_API_ENDPOINT : null,
-    fetcher,
-    {
-      refreshInterval: POLL_INTERVAL_MS,
-      dedupingInterval: POLL_INTERVAL_MS / 2,
-    },
-  );
-
-  const deleteSource = useCallback(async (key: string) => {
-    const toastId = toast.loading("Deleting source...");
-
-    try {
-      const res = await fetch(FILES_API_ENDPOINT, {
+  const deleteMutation = useMutation({
+    mutationFn: (key: string) =>
+      apiRequest(FILES_API_ENDPOINT, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key }),
-      });
+      }),
+    onMutate: async (key) => {
+      await queryClient.cancelQueries({ queryKey: fileKeys.list() });
+      const previous = queryClient.getQueryData<{ files: Source[] }>(
+        fileKeys.list(),
+      );
 
-      if (!res.ok) {
-        throw new Error("Failed to delete source");
-      }
+      queryClient.setQueryData<{ files: Source[] }>(fileKeys.list(), (old) => ({
+        files: old?.files.filter((f) => f.key !== key) ?? [],
+      }));
 
-      await mutate(FILES_API_ENDPOINT);
+      return { previous };
+    },
+    onError: (err, _key, context) => {
+      queryClient.setQueryData(fileKeys.list(), context?.previous);
+      const message = err instanceof Error ? err.message : "Delete failed";
+      toast.error("Delete failed", { description: message });
+    },
+    onSuccess: () => {
+      toast.success("Source deleted");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: fileKeys.list() });
+    },
+  });
 
-      toast.success("Source deleted", {
-        id: toastId,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Delete failed";
-      toast.error("Delete failed", {
-        id: toastId,
-        description: message,
-      });
-    }
-  }, []);
+  const deleteSource = useCallback(
+    (key: string) => {
+      toast.loading("Deleting source...");
+      deleteMutation.mutate(key);
+    },
+    [deleteMutation],
+  );
 
   return {
     sources: data?.files ?? [],
-    isLoading,
+    isLoading: isPending,
     error,
     isUploading,
     uploadProgress,

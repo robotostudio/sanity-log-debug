@@ -1,8 +1,8 @@
+import { desc, inArray, sql } from "drizzle-orm";
+import { getRun } from "workflow/api";
+import { handleError, success } from "@/lib/api";
 import { db, files, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
-import { desc, inArray, sql } from "drizzle-orm";
-import { NextResponse } from "next/server";
-import { getRun } from "workflow/api";
 
 const logger = new Logger("api/processing");
 
@@ -21,7 +21,6 @@ async function getWorkflowStatus(runId: string | null) {
 export async function GET() {
   try {
     const [stats, recentJobs, activeJobs] = await Promise.all([
-      // Status counts
       db
         .select({
           status: files.processingStatus,
@@ -30,14 +29,8 @@ export async function GET() {
         .from(files)
         .groupBy(files.processingStatus),
 
-      // Recent jobs with full details
-      db
-        .select()
-        .from(files)
-        .orderBy(desc(files.uploadedAt))
-        .limit(20),
+      db.select().from(files).orderBy(desc(files.uploadedAt)).limit(20),
 
-      // Active jobs (pending or processing)
       db
         .select()
         .from(files)
@@ -45,7 +38,6 @@ export async function GET() {
         .orderBy(files.uploadedAt),
     ]);
 
-    // For active jobs that are processing, get current record count for progress tracking
     const processingJobIds = activeJobs
       .filter((job) => job.processingStatus === "processing")
       .map((job) => job.id);
@@ -67,7 +59,6 @@ export async function GET() {
       );
     }
 
-    // Get workflow status for active jobs
     const workflowStatuses = await Promise.all(
       activeJobs.map(async (job) => {
         const workflowInfo = await getWorkflowStatus(job.workflowRunId);
@@ -79,14 +70,12 @@ export async function GET() {
       workflowStatuses.map((ws) => [ws.id, ws]),
     );
 
-    // Enrich active jobs with current progress and workflow status
     const activeJobsWithProgress = activeJobs.map((job) => ({
       ...job,
       currentRecordCount: progressMap[job.id] ?? 0,
       workflowStatus: workflowStatusMap[job.id]?.status ?? "unknown",
     }));
 
-    // Enrich recent jobs with workflow status
     const recentJobWorkflowStatuses = await Promise.all(
       recentJobs.map(async (job) => {
         const workflowInfo = await getWorkflowStatus(job.workflowRunId);
@@ -103,7 +92,6 @@ export async function GET() {
       workflowStatus: recentWorkflowStatusMap[job.id]?.status ?? "unknown",
     }));
 
-    // Calculate total records processed
     const totalRecords = await db
       .select({
         total: sql<number>`count(*)::int`,
@@ -116,7 +104,7 @@ export async function GET() {
       totalRecords: totalRecords[0]?.total ?? 0,
     });
 
-    return NextResponse.json({
+    return success({
       stats: Object.fromEntries(stats.map((s) => [s.status, s.count])),
       recentJobs: recentJobsWithStatus,
       activeJobs: activeJobsWithProgress,
@@ -124,9 +112,6 @@ export async function GET() {
     });
   } catch (error) {
     logger.error("Failed to fetch processing stats", error);
-    return NextResponse.json(
-      { error: "Failed to fetch processing stats" },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to fetch processing stats");
   }
 }

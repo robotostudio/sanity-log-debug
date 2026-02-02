@@ -44,6 +44,32 @@ export const METHOD_BG: Record<string, string> = {
   HEAD: "bg-violet-500/15 text-violet-400 border-violet-500/20",
 };
 
+export const PROCESSING_STATUS_BG: Record<
+  string,
+  { label: string; className: string }
+> = {
+  pending: {
+    label: "Queued",
+    className: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",
+  },
+  processing: {
+    label: "Processing",
+    className: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+  },
+  ready: {
+    label: "Complete",
+    className: "bg-green-500/15 text-green-400 border-green-500/20",
+  },
+  failed: {
+    label: "Failed",
+    className: "bg-red-500/15 text-red-400 border-red-500/20",
+  },
+  error: {
+    label: "Failed",
+    className: "bg-red-500/15 text-red-400 border-red-500/20",
+  },
+};
+
 export const LATENCY_BUCKETS = [
   { label: "0-1ms", min: 0, max: 1, color: "#22c55e" },
   { label: "1-10ms", min: 1, max: 10, color: "#4ade80" },

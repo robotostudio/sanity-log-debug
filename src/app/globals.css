@@ -48,6 +48,7 @@
 
 :root {
   --radius: 0.375rem;
+  --content-bg: #141414;
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);
@@ -144,4 +145,25 @@
     animation: none;
     transform: translateX(0);
   }
+}
+
+/* Recharts Brush styling */
+.recharts-brush-slide {
+  fill: rgba(59, 130, 246, 0.08);
+  stroke: none;
+}
+
+.recharts-brush-traveller rect {
+  fill: #3f3f46;
+  rx: 3;
+  ry: 3;
+}
+
+.recharts-brush-traveller line {
+  stroke: #71717a;
+}
+
+.recharts-brush .recharts-cartesian-axis-tick text {
+  fill: #52525b;
+  font-size: 9px;
 }

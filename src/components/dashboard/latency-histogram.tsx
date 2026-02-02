@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock } from "lucide-react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -13,9 +14,17 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import { LATENCY_BUCKETS } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { DistributionItem } from "@/lib/types";
-import { useDashboard } from "./data-state";
+import {
+  ANIMATION_DEFAULTS,
+  AXIS_STROKE,
+  AXIS_TICK_STYLE,
+  ChartTooltipWrapper,
+  GRID_PROPS,
+} from "./chart-config";
 
 // ============================================================================
 // Chart Card Wrapper
@@ -23,7 +32,7 @@ import { useDashboard } from "./data-state";
 
 function ChartCard({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-400">
           Latency Distribution
@@ -41,13 +50,12 @@ function ChartCard({ children }: { children: React.ReactNode }) {
 function LatencyEmpty() {
   return (
     <ChartCard>
-      <div className="flex h-[300px] flex-col items-center justify-center text-center">
-        <Clock className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No latency data</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to view distribution
-        </p>
-      </div>
+      <StateContainer
+        icon={<Clock className="h-6 w-6 text-zinc-500" />}
+        title="No latency data"
+        description="Select a log file to view distribution"
+        className="h-72 py-0"
+      />
     </ChartCard>
   );
 }
@@ -59,7 +67,7 @@ function LatencyEmpty() {
 function LatencyLoading() {
   return (
     <ChartCard>
-      <Skeleton className="h-[300px] w-full" />
+      <Skeleton className="h-72 w-full" />
     </ChartCard>
   );
 }
@@ -69,41 +77,46 @@ function LatencyLoading() {
 // ============================================================================
 
 function LatencyData({ data }: { data: DistributionItem[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   return (
     <ChartCard>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-          <XAxis
-            dataKey="name"
-            stroke="#52525b"
-            tick={{ fontSize: 10, fill: "#71717a" }}
-          />
+          <CartesianGrid {...GRID_PROPS} />
+          <XAxis dataKey="name" stroke={AXIS_STROKE} tick={AXIS_TICK_STYLE} />
           <YAxis
-            stroke="#52525b"
-            tick={{ fontSize: 10, fill: "#71717a" }}
+            stroke={AXIS_STROKE}
+            tick={AXIS_TICK_STYLE}
             tickFormatter={(v) => v.toLocaleString()}
           />
           <Tooltip
+            isAnimationActive={false}
+            cursor={{ fill: "rgba(255,255,255,0.03)" }}
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
               const d = payload[0].payload as DistributionItem;
               return (
-                <div className="rounded border border-zinc-700 bg-zinc-900 p-2 text-xs shadow-lg">
+                <ChartTooltipWrapper>
                   <p className="font-mono text-zinc-100">{d.name}</p>
                   <p className="text-zinc-400">
                     {d.count.toLocaleString()} requests
                   </p>
-                </div>
+                </ChartTooltipWrapper>
               );
             }}
           />
-          <Bar dataKey="count" isAnimationActive={false}>
+          <Bar dataKey="count" radius={[4, 4, 0, 0]} {...ANIMATION_DEFAULTS}>
             {data.map((entry, i) => (
               <Cell
                 key={entry.name}
                 fill={LATENCY_BUCKETS[i]?.color ?? "#6b7280"}
-                fillOpacity={0.8}
+                fillOpacity={
+                  activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+                }
+                onMouseEnter={() => setActiveIndex(i)}
+                onMouseLeave={() => setActiveIndex(null)}
+                className="transition-opacity"
               />
             ))}
           </Bar>
@@ -118,7 +131,7 @@ function LatencyData({ data }: { data: DistributionItem[] }) {
 // ============================================================================
 
 export function LatencyHistogram() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
     return <LatencyEmpty />;

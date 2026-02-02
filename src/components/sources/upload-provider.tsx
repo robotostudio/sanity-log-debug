@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   type ReactNode,
@@ -10,7 +11,8 @@ import {
   useState,
 } from "react";
 import { toast } from "sonner";
-import { mutate } from "swr";
+import { apiRequest } from "@/lib/api-client";
+import { fileKeys } from "@/lib/query-keys";
 import type { UploadProgress } from "./types";
 import { isValidNdjsonFile } from "./utils";
 
@@ -77,6 +79,7 @@ interface UploadProviderProps {
 }
 
 export function UploadProvider({ children }: UploadProviderProps) {
+  const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>(
     initialUploadProgress,
@@ -85,102 +88,93 @@ export function UploadProvider({ children }: UploadProviderProps) {
     null,
   );
 
-  const uploadFile = useCallback(async (file: File) => {
-    if (!isValidNdjsonFile(file)) {
-      toast.error("Invalid file type", {
-        description: "Please upload an .ndjson file",
-      });
-      return;
-    }
-
-    // Check file size
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      toast.error("File too large", {
-        description: `Maximum file size is ${Math.round(MAX_FILE_SIZE_BYTES / (1024 * 1024))}MB. Your file is ${Math.round(file.size / (1024 * 1024))}MB.`,
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress({
-      status: "uploading",
-      percentage: 0,
-      bytesUploaded: 0,
-      bytesTotal: file.size,
-      fileName: file.name,
-    });
-
-    try {
-      const presignRes = await fetch(FILES_API_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name }),
-      });
-
-      if (!presignRes.ok) {
-        throw new Error("Failed to get upload URL");
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!isValidNdjsonFile(file)) {
+        toast.error("Invalid file type", {
+          description: "Please upload an .ndjson file",
+        });
+        return;
       }
 
-      const { url, key } = await presignRes.json();
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error("File too large", {
+          description: `Maximum file size is ${Math.round(MAX_FILE_SIZE_BYTES / (1024 * 1024))}MB. Your file is ${Math.round(file.size / (1024 * 1024))}MB.`,
+        });
+        return;
+      }
 
-      await uploadWithProgress(url, file, (loaded, total) => {
-        const percentage = Math.round((loaded / total) * 100);
+      setIsUploading(true);
+      setUploadProgress({
+        status: "uploading",
+        percentage: 0,
+        bytesUploaded: 0,
+        bytesTotal: file.size,
+        fileName: file.name,
+      });
+
+      try {
+        const { url, key } = await apiRequest<{ url: string; key: string }>(
+          FILES_API_ENDPOINT,
+          {
+            method: "POST",
+            body: JSON.stringify({ filename: file.name }),
+          },
+        );
+
+        await uploadWithProgress(url, file, (loaded, total) => {
+          const percentage = Math.round((loaded / total) * 100);
+          setUploadProgress((prev) => ({
+            ...prev,
+            percentage,
+            bytesUploaded: loaded,
+            bytesTotal: total,
+          }));
+        });
+
+        await apiRequest(FILES_API_ENDPOINT, {
+          method: "PUT",
+          body: JSON.stringify({
+            key,
+            filename: file.name,
+            size: file.size,
+          }),
+        });
+
         setUploadProgress((prev) => ({
           ...prev,
-          percentage,
-          bytesUploaded: loaded,
-          bytesTotal: total,
+          status: "complete",
+          percentage: 100,
         }));
-      });
 
-      // Confirm upload complete and trigger processing
-      const confirmRes = await fetch(FILES_API_ENDPOINT, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key,
-          filename: file.name,
-          size: file.size,
-        }),
-      });
+        await queryClient.invalidateQueries({ queryKey: fileKeys.list() });
 
-      if (!confirmRes.ok) {
-        throw new Error("Failed to confirm upload");
+        toast.success("File uploaded", {
+          description: `${file.name} is now being processed`,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Upload failed";
+        setUploadProgress((prev) => ({
+          ...prev,
+          status: "error",
+        }));
+        toast.error("Upload failed", {
+          description: message,
+        });
+      } finally {
+        setIsUploading(false);
+        if (uploadResetTimerRef.current) {
+          clearTimeout(uploadResetTimerRef.current);
+        }
+        uploadResetTimerRef.current = setTimeout(() => {
+          setUploadProgress(initialUploadProgress);
+          uploadResetTimerRef.current = null;
+        }, 1500);
       }
-
-      setUploadProgress((prev) => ({
-        ...prev,
-        status: "complete",
-        percentage: 100,
-      }));
-
-      await mutate(FILES_API_ENDPOINT);
-
-      toast.success("File uploaded", {
-        description: `${file.name} is now being processed`,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed";
-      setUploadProgress((prev) => ({
-        ...prev,
-        status: "error",
-      }));
-      toast.error("Upload failed", {
-        description: message,
-      });
-    } finally {
-      setIsUploading(false);
-      // Clear any existing timer before setting a new one
-      if (uploadResetTimerRef.current) {
-        clearTimeout(uploadResetTimerRef.current);
-      }
-      // Reset progress after a short delay to allow UI to show completion
-      uploadResetTimerRef.current = setTimeout(() => {
-        setUploadProgress(initialUploadProgress);
-        uploadResetTimerRef.current = null;
-      }, 1500);
-    }
-  }, []);
+    },
+    [queryClient],
+  );
 
   const value = useMemo(
     () => ({

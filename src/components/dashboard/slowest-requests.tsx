@@ -3,6 +3,7 @@
 import { Gauge } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDuration } from "@/lib/constants";
-import { useDashboard } from "./data-state";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { StatusBadge } from "./status-badge";
 
 // ============================================================================
@@ -35,7 +36,7 @@ interface SlowRequest {
 
 function CardWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-zinc-400">
           Top 20 Slowest Requests
@@ -53,13 +54,12 @@ function CardWrapper({ children }: { children: React.ReactNode }) {
 function SlowestRequestsEmpty() {
   return (
     <CardWrapper>
-      <div className="flex h-[300px] flex-col items-center justify-center text-center">
-        <Gauge className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No request data</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to view slow requests
-        </p>
-      </div>
+      <StateContainer
+        icon={<Gauge className="h-6 w-6 text-zinc-500" />}
+        title="No request data"
+        description="Select a log file to view slow requests"
+        className="h-72 py-0"
+      />
     </CardWrapper>
   );
 }
@@ -87,7 +87,7 @@ function SlowestRequestsLoading() {
 function SlowestRequestsData({ data }: { data: SlowRequest[] }) {
   return (
     <CardWrapper>
-      <div className="max-h-[300px] overflow-y-auto">
+      <div className="max-h-72 overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-800 hover:bg-transparent">
@@ -129,7 +129,7 @@ function SlowestRequestsData({ data }: { data: SlowRequest[] }) {
 // ============================================================================
 
 export function SlowestRequests() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
     return <SlowestRequestsEmpty />;

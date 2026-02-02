@@ -1,226 +1,145 @@
 "use client";
 
-import {
-  AlertCircle,
-  BarChart3,
-  CheckCircle2,
-  Clock,
-  Cog,
-  FileText,
-  MoreHorizontal,
-  Trash2,
-} from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AnalyticsNavIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import type { ProcessingStatus, Source } from "./types";
-import { formatBytes, formatDate, getFileName } from "./utils";
+import { formatBytes, formatSourceName, getFileName } from "./utils";
 
 interface SourceRowProps {
   source: Source;
-  onDelete: (key: string) => Promise<void>;
+  onDelete?: (key: string) => void;
 }
 
-export function SourceRow({ source, onDelete }: SourceRowProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const fileName = getFileName(source.key);
-  const isReady = source.processingStatus === "ready";
+function formatRelativeTime(dateString: string): string {
+  const now = Date.now();
+  const date = new Date(dateString).getTime();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    await onDelete(source.key);
-    setIsDeleting(false);
-    setShowDeleteDialog(false);
-  };
+function formatDateRange(dateString: string): string {
+  const date = new Date(dateString);
+  const month = date.toLocaleString("en-US", { month: "short" });
+  const day = date.getDate();
+  const endDay = Math.min(day + 7, 30);
+  return `${month} ${day} - ${endDay}`;
+}
+
+const STATUS_DOT_COLORS: Record<string, string> = {
+  processing: "bg-amber-400",
+  pending: "bg-zinc-400",
+  ready: "bg-emerald-400",
+  error: "bg-red-400",
+  failed: "bg-red-400",
+  legacy: "bg-zinc-400",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  processing: "Processing",
+  pending: "Pending",
+  ready: "Ready",
+  error: "Error",
+  failed: "Failed",
+  legacy: "Legacy",
+};
+
+function StatusDot({ status }: { status?: ProcessingStatus }) {
+  const key = status && status in STATUS_DOT_COLORS ? status : "legacy";
 
   return (
-    <>
-      <div className="group flex items-center gap-4 rounded-md border border-zinc-800 bg-zinc-900 px-4 py-3 transition-colors hover:border-zinc-700">
-        {/* Icon */}
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800/50">
-          <FileText className="h-5 w-5 text-zinc-400" />
-        </div>
-
-        {/* Name */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-zinc-100">
-            {fileName}
-          </p>
-          <p className="text-xs text-zinc-500">
-            {formatDate(source.lastModified)}
-          </p>
-        </div>
-
-        {/* Status */}
-        <div className="flex items-center gap-2">
-          <StatusBadge status={source.processingStatus} />
-        </div>
-
-        {/* Records */}
-        <div className="w-24 text-right">
-          {source.recordCount !== null && source.recordCount !== undefined ? (
-            <p className="text-sm tabular-nums text-zinc-300">
-              {source.recordCount.toLocaleString()}
-            </p>
-          ) : (
-            <p className="text-sm text-zinc-500">-</p>
-          )}
-          <p className="text-xs text-zinc-500">records</p>
-        </div>
-
-        {/* Size */}
-        <div className="w-20 text-right">
-          <p className="text-sm tabular-nums text-zinc-300">
-            {formatBytes(source.size)}
-          </p>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2">
-          {isReady && (
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="h-8 text-zinc-400 hover:text-zinc-100"
-            >
-              <Link href={`/analytics?file=${encodeURIComponent(source.key)}`}>
-                <BarChart3 className="mr-2 h-4 w-4" />
-                View
-              </Link>
-            </Button>
-          )}
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-zinc-500 opacity-0 group-hover:opacity-100 hover:text-zinc-100 transition-opacity"
-                aria-label="More actions"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              {isReady && (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href={`/analytics?file=${encodeURIComponent(source.key)}`}
-                    >
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      View Analytics
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              <DropdownMenuItem
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-red-400 focus:text-red-400"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete source</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{fileName}&quot;? This
-              action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <div className="flex items-center gap-2">
+      <div className={cn("h-3 w-3 rounded-full", STATUS_DOT_COLORS[key])} />
+      <span className="text-base leading-6 text-[#f4f4f5]">
+        {STATUS_LABELS[key]}
+      </span>
+    </div>
   );
 }
 
-function StatusBadge({ status }: { status?: ProcessingStatus }) {
-  const config: Record<
-    ProcessingStatus,
-    { label: string; icon: React.ReactNode; className: string }
-  > = {
-    pending: {
-      label: "Pending",
-      icon: <Clock className="h-3 w-3" />,
-      className: "bg-zinc-800 text-zinc-400",
-    },
-    processing: {
-      label: "Processing",
-      icon: <Cog className="h-3 w-3 animate-spin" />,
-      className: "bg-blue-500/20 text-blue-400",
-    },
-    ready: {
-      label: "Ready",
-      icon: <CheckCircle2 className="h-3 w-3" />,
-      className: "bg-green-500/20 text-green-400",
-    },
-    error: {
-      label: "Error",
-      icon: <AlertCircle className="h-3 w-3" />,
-      className: "bg-red-500/20 text-red-400",
-    },
-    failed: {
-      label: "Failed",
-      icon: <AlertCircle className="h-3 w-3" />,
-      className: "bg-red-500/20 text-red-400",
-    },
-    legacy: {
-      label: "Legacy",
-      icon: <FileText className="h-3 w-3" />,
-      className: "bg-zinc-800 text-zinc-400",
-    },
-  };
+function AnalyticsIconSmall() {
+  return (
+    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
+      <AnalyticsNavIcon className="h-3.5 w-3.5 text-zinc-400" />
+    </div>
+  );
+}
 
-  const statusKey = status && status in config ? status : "legacy";
-  const { label, icon, className } = config[statusKey];
+export function SourceRow({ source, onDelete }: SourceRowProps) {
+  const rawFileName = getFileName(source.key);
+  const displayName = formatSourceName(rawFileName);
+  const isReady = source.processingStatus === "ready";
+  const isProcessing =
+    source.processingStatus === "processing" ||
+    source.processingStatus === "pending";
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-        className,
-      )}
+    <Link
+      href={`/sources/${source.id}`}
+      className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]"
     >
-      {icon}
-      {label}
-    </span>
+      {/* Name + time */}
+      <div className="flex flex-col gap-0.5 min-w-0 pr-4">
+        <p className="truncate text-base leading-6 text-[#f4f4f5]">
+          {displayName}
+        </p>
+        <p className="text-base leading-6 text-[#a1a1aa]">
+          {formatRelativeTime(source.lastModified)}
+        </p>
+      </div>
+
+      {/* Status */}
+      <div>
+        <StatusDot status={source.processingStatus} />
+      </div>
+
+      {/* Records */}
+      <div>
+        <p className="text-base leading-6 text-[#f4f4f5]">
+          {source.recordCount != null ? (
+            <>
+              {source.recordCount.toLocaleString()}{" "}
+              <span className="text-[#a1a1aa]">records</span>
+            </>
+          ) : (
+            <span className="text-[#a1a1aa]">&mdash;</span>
+          )}
+        </p>
+      </div>
+
+      {/* Size */}
+      <div>
+        <p className="text-base leading-6 text-[#f4f4f5]">
+          {formatBytes(source.size)}
+        </p>
+      </div>
+
+      {/* Date range */}
+      <div>
+        <p className="text-base leading-6 text-[#f4f4f5]">
+          {formatDateRange(source.lastModified)}
+        </p>
+      </div>
+
+      {/* View Analytics */}
+      <div>
+        <div
+          className={cn(
+            "inline-flex items-center gap-2 text-base leading-6 text-[#f4f4f5]",
+            !isReady && "text-[#a1a1aa]",
+            isProcessing && "opacity-40",
+          )}
+        >
+          <AnalyticsIconSmall />
+          View Analytics
+        </div>
+      </div>
+    </Link>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { List } from "lucide-react";
-import { useEffect, useState } from "react";
-import useSWR from "swr";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import {
   Table,
   TableBody,
@@ -15,16 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
-import { useDashboard } from "./data-state";
 import { LogDetailSheet } from "./log-detail-sheet";
 import { SeverityBadge, StatusBadge } from "./status-badge";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface LogsResponse {
   data: LogRecord[];
@@ -44,12 +43,6 @@ const SORT_COLUMNS = [
 ] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-// ============================================================================
-// Card Wrapper
-// ============================================================================
-
 function CardWrapper({
   children,
   total,
@@ -58,7 +51,7 @@ function CardWrapper({
   total?: number;
 }) {
   return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
+    <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium text-zinc-400">
@@ -76,27 +69,18 @@ function CardWrapper({
   );
 }
 
-// ============================================================================
-// Empty State
-// ============================================================================
-
 function LogsTableEmpty() {
   return (
     <CardWrapper>
-      <div className="flex h-[300px] flex-col items-center justify-center text-center">
-        <List className="mb-3 h-10 w-10 text-zinc-700" />
-        <p className="text-sm text-zinc-500">No log entries</p>
-        <p className="mt-1 text-xs text-zinc-600">
-          Select a log file to view detailed entries
-        </p>
-      </div>
+      <StateContainer
+        icon={<List className="h-6 w-6 text-zinc-500" />}
+        title="No log entries"
+        description="Select a log file to view detailed entries"
+        className="h-72 py-0"
+      />
     </CardWrapper>
   );
 }
-
-// ============================================================================
-// Loading State
-// ============================================================================
 
 function LogsTableLoading() {
   return (
@@ -112,23 +96,20 @@ function LogsTableLoading() {
   );
 }
 
-// ============================================================================
-// Data State
-// ============================================================================
+interface LogsTableDataProps {
+  queryString: string;
+}
 
-function LogsTableData() {
-  const { state } = useDashboard();
-  const { queryString } = useFilters();
+/**
+ * Logs table data component. Uses key prop pattern to reset pagination
+ * when filters change - parent passes key={queryString} to trigger reset.
+ */
+function LogsTableData({ queryString }: LogsTableDataProps) {
+  const state = useDashboardData();
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortColumn>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedRecord, setSelectedRecord] = useState<LogRecord | null>(null);
-
-  // Reset page when filters change
-  // biome-ignore lint/correctness/useExhaustiveDependencies: queryString triggers page reset
-  useEffect(() => {
-    setPage(1);
-  }, [queryString]);
 
   const params = new URLSearchParams(queryString);
   params.set("page", String(page));
@@ -137,11 +118,15 @@ function LogsTableData() {
   params.set("sortDir", sortDir);
   if (state.selectedFile) params.set("fileKey", state.selectedFile);
 
-  const { data, isLoading } = useSWR<LogsResponse>(
-    state.selectedFile ? `/api/logs?${params.toString()}` : null,
-    fetcher,
-    { keepPreviousData: true, revalidateOnFocus: false },
-  );
+  const paramsObj = Object.fromEntries(params.entries());
+
+  const { data, isPending } = useQuery({
+    queryKey: logKeys.list(paramsObj),
+    queryFn: () => apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`),
+    enabled: !!state.selectedFile,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
 
   const handleSort = (col: SortColumn) => {
     if (sortBy === col) {
@@ -174,7 +159,7 @@ function LogsTableData() {
     </TableHead>
   );
 
-  if (isLoading && !data) {
+  if (isPending && !data) {
     return <LogsTableLoading />;
   }
 
@@ -276,16 +261,14 @@ function LogsTableData() {
   );
 }
 
-// ============================================================================
-// Main Export
-// ============================================================================
-
 export function LogsTable() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
+  const { queryString } = useFilters();
 
   if (state.status === "empty") {
     return <LogsTableEmpty />;
   }
 
-  return <LogsTableData />;
+  // Key prop resets component state (including page) when filters change
+  return <LogsTableData key={queryString} queryString={queryString} />;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart3, PieChartIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -9,62 +10,22 @@ import {
   Pie,
   PieChart,
   ResponsiveContainer,
+  Sector,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CHART_COLORS, getStatusColor } from "@/lib/constants";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import type { DistributionItem } from "@/lib/types";
-import { useDashboard } from "./data-state";
-
-// ============================================================================
-// Shared Components
-// ============================================================================
-
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="border-zinc-800 bg-zinc-900/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-400">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function ChartEmpty({
-  title,
-  icon: Icon,
-  height = "h-[300px]",
-}: {
-  title: string;
-  icon: typeof BarChart3;
-  height?: string;
-}) {
-  return (
-    <div
-      className={`flex ${height} flex-col items-center justify-center text-center`}
-    >
-      <Icon className="mb-3 h-10 w-10 text-zinc-700" />
-      <p className="text-sm text-zinc-500">No {title.toLowerCase()} data</p>
-      <p className="mt-1 text-xs text-zinc-600">Select a log file to view</p>
-    </div>
-  );
-}
-
-function ChartLoading({ height = "h-[300px]" }: { height?: string }) {
-  return <Skeleton className={`w-full ${height}`} />;
-}
+import {
+  ANIMATION_DEFAULTS,
+  AXIS_STROKE,
+  AXIS_TICK_STYLE,
+  ChartTooltipWrapper,
+  GRID_PROPS,
+} from "./chart-config";
+import { ChartCard, ChartEmpty, ChartLoading } from "./charts/chart-wrapper";
 
 function BarTooltip({
   active,
@@ -76,7 +37,7 @@ function BarTooltip({
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900 p-2 text-xs shadow-lg">
+    <ChartTooltipWrapper>
       <p className="font-mono text-zinc-100">{d.name}</p>
       <p className="text-zinc-400">
         Count: <span className="text-zinc-100">{d.count.toLocaleString()}</span>
@@ -87,7 +48,7 @@ function BarTooltip({
           <span className="text-zinc-100">{d.avgDuration.toFixed(1)}ms</span>
         </p>
       ) : null}
-    </div>
+    </ChartTooltipWrapper>
   );
 }
 
@@ -96,30 +57,40 @@ function BarTooltip({
 // ============================================================================
 
 function StatusDistributionData({ data }: { data: DistributionItem[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+        <CartesianGrid {...GRID_PROPS} />
         <XAxis
           type="number"
-          stroke="#52525b"
-          tick={{ fontSize: 10, fill: "#71717a" }}
+          stroke={AXIS_STROKE}
+          tick={AXIS_TICK_STYLE}
           tickFormatter={(v) => v.toLocaleString()}
         />
         <YAxis
           type="category"
           dataKey="name"
-          stroke="#52525b"
-          tick={{ fontSize: 10, fill: "#71717a", fontFamily: "monospace" }}
+          stroke={AXIS_STROKE}
+          tick={{ ...AXIS_TICK_STYLE, fontFamily: "monospace" }}
           width={40}
         />
-        <Tooltip content={<BarTooltip />} />
-        <Bar dataKey="count" isAnimationActive={false}>
-          {data.map((entry) => (
+        <Tooltip
+          content={<BarTooltip />}
+          isAnimationActive={false}
+          cursor={{ fill: "rgba(255,255,255,0.03)" }}
+        />
+        <Bar dataKey="count" {...ANIMATION_DEFAULTS} radius={[0, 4, 4, 0]}>
+          {data.map((entry, i) => (
             <Cell
               key={entry.name}
               fill={getStatusColor(Number.parseInt(entry.name, 10))}
-              fillOpacity={0.8}
+              fillOpacity={
+                activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+              }
+              onMouseEnter={() => setActiveIndex(i)}
+              onMouseLeave={() => setActiveIndex(null)}
             />
           ))}
         </Bar>
@@ -129,7 +100,7 @@ function StatusDistributionData({ data }: { data: DistributionItem[] }) {
 }
 
 export function StatusDistribution() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {
@@ -152,30 +123,40 @@ export function StatusDistribution() {
 // ============================================================================
 
 function EndpointDistributionData({ data }: { data: DistributionItem[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} layout="vertical">
-        <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+        <CartesianGrid {...GRID_PROPS} />
         <XAxis
           type="number"
-          stroke="#52525b"
-          tick={{ fontSize: 10, fill: "#71717a" }}
+          stroke={AXIS_STROKE}
+          tick={AXIS_TICK_STYLE}
           tickFormatter={(v) => v.toLocaleString()}
         />
         <YAxis
           type="category"
           dataKey="name"
-          stroke="#52525b"
-          tick={{ fontSize: 10, fill: "#71717a" }}
+          stroke={AXIS_STROKE}
+          tick={AXIS_TICK_STYLE}
           width={70}
         />
-        <Tooltip content={<BarTooltip />} />
-        <Bar dataKey="count" isAnimationActive={false}>
+        <Tooltip
+          content={<BarTooltip />}
+          isAnimationActive={false}
+          cursor={{ fill: "rgba(255,255,255,0.03)" }}
+        />
+        <Bar dataKey="count" {...ANIMATION_DEFAULTS} radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => (
             <Cell
               key={entry.name}
               fill={CHART_COLORS[i % CHART_COLORS.length]}
-              fillOpacity={0.7}
+              fillOpacity={
+                activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+              }
+              onMouseEnter={() => setActiveIndex(i)}
+              onMouseLeave={() => setActiveIndex(null)}
             />
           ))}
         </Bar>
@@ -185,7 +166,7 @@ function EndpointDistributionData({ data }: { data: DistributionItem[] }) {
 }
 
 export function EndpointDistribution() {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {
@@ -226,10 +207,10 @@ function renderCustomLabel({
   name: string;
   percent: number;
 }) {
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.4;
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.55;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  if (percent < 0.03) return null;
+  if (percent < 0.05) return null;
   return (
     <text
       x={x}
@@ -245,20 +226,34 @@ function renderCustomLabel({
 }
 
 function DonutChartData({ data }: { data: DistributionItem[] }) {
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const total = data.reduce((sum, d) => sum + d.count, 0);
+
   return (
-    <ResponsiveContainer width="100%" height={250}>
+    <ResponsiveContainer width="100%" height={280}>
       <PieChart>
         <Pie
           data={data}
           cx="50%"
           cy="50%"
-          innerRadius={50}
-          outerRadius={80}
+          innerRadius={60}
+          outerRadius={95}
           paddingAngle={2}
+          stroke="none"
           dataKey="count"
           nameKey="name"
           label={renderCustomLabel}
-          isAnimationActive={false}
+          {...ANIMATION_DEFAULTS}
+          animationBegin={100}
+          activeIndex={activeIndex}
+          activeShape={(props: any) => (
+            <Sector
+              {...props}
+              outerRadius={(props.outerRadius as number) + 6}
+            />
+          )}
+          onMouseEnter={(_, index) => setActiveIndex(index)}
+          onMouseLeave={() => setActiveIndex(undefined)}
         >
           {data.map((entry, i) => (
             <Cell
@@ -268,17 +263,35 @@ function DonutChartData({ data }: { data: DistributionItem[] }) {
             />
           ))}
         </Pie>
+        <text
+          x="50%"
+          y="46%"
+          textAnchor="middle"
+          fill="#f4f4f5"
+          fontSize={18}
+          fontWeight={600}
+          fontFamily="var(--font-geist-mono)"
+        >
+          {total.toLocaleString()}
+        </text>
+        <text x="50%" y="58%" textAnchor="middle" fill="#71717a" fontSize={10}>
+          total
+        </text>
         <Tooltip
+          isAnimationActive={false}
           content={({ active, payload }) => {
             if (!active || !payload?.[0]) return null;
             const d = payload[0].payload as DistributionItem;
             return (
-              <div className="rounded border border-zinc-700 bg-zinc-900 p-2 text-xs shadow-lg">
+              <ChartTooltipWrapper>
                 <p className="font-mono text-zinc-100">{d.name}</p>
                 <p className="text-zinc-400">
                   {d.count.toLocaleString()} requests
+                  <span className="ml-1 text-zinc-500">
+                    ({total > 0 ? ((d.count / total) * 100).toFixed(1) : 0}%)
+                  </span>
                 </p>
-              </div>
+              </ChartTooltipWrapper>
             );
           }}
         />
@@ -293,22 +306,18 @@ interface DonutChartProps {
 }
 
 export function DonutChart({ dataKey, title }: DonutChartProps) {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   const content = (() => {
     if (state.status === "empty") {
-      return (
-        <ChartEmpty title={title} icon={PieChartIcon} height="h-[250px]" />
-      );
+      return <ChartEmpty title={title} icon={PieChartIcon} height="h-72" />;
     }
     if (state.status === "loading") {
-      return <ChartLoading height="h-[250px]" />;
+      return <ChartLoading height="h-72" />;
     }
     const data = state.data?.[dataKey];
     if (state.status === "error" || !data) {
-      return (
-        <ChartEmpty title={title} icon={PieChartIcon} height="h-[250px]" />
-      );
+      return <ChartEmpty title={title} icon={PieChartIcon} height="h-72" />;
     }
     return <DonutChartData data={data} />;
   })();

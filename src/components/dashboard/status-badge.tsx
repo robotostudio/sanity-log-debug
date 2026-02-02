@@ -1,16 +1,14 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { getStatusColor } from "@/lib/constants";
+import { getStatusCategory, SEVERITY_BG, STATUS_BG } from "@/lib/constants";
 
 export function StatusBadge({ status }: { status: number }) {
-  const color = getStatusColor(status);
+  const cat = getStatusCategory(status);
+  const bg =
+    STATUS_BG[cat] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/20";
   return (
-    <Badge
-      variant="outline"
-      className="font-mono text-xs"
-      style={{ borderColor: color, color }}
-    >
+    <Badge variant="outline" className={`font-mono text-xs ${bg}`}>
       {status}
     </Badge>
   );
@@ -21,16 +19,10 @@ export function SeverityBadge({
 }: {
   severity: "INFO" | "WARN" | "ERROR";
 }) {
-  const colors = {
-    INFO: "border-emerald-500/50 text-emerald-400 bg-emerald-500/10",
-    WARN: "border-amber-500/50 text-amber-400 bg-amber-500/10",
-    ERROR: "border-red-500/50 text-red-400 bg-red-500/10",
-  };
+  const bg =
+    SEVERITY_BG[severity] ?? "bg-zinc-500/15 text-zinc-400 border-zinc-500/20";
   return (
-    <Badge
-      variant="outline"
-      className={`font-mono text-xs ${colors[severity]}`}
-    >
+    <Badge variant="outline" className={`font-mono text-xs ${bg}`}>
       {severity}
     </Badge>
   );

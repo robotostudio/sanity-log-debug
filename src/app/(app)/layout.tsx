@@ -7,10 +7,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <NuqsAdapter>
       <UploadProvider>
         <SidebarProvider>
-          <div className="flex h-screen bg-zinc-950">
+          <div className="flex h-screen gap-2 bg-zinc-950 p-2">
             <Sidebar />
-            <main className="flex-1 overflow-auto">
-              <div className="mx-auto max-w-[1600px] px-6 py-6">{children}</div>
+            <main className="flex-1 overflow-auto rounded-lg bg-[var(--content-bg)]">
+              <div className="flex min-h-full flex-col px-6 pt-5 pb-6">
+                {children}
+              </div>
             </main>
           </div>
         </SidebarProvider>

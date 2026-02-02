@@ -1,56 +1,49 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "./empty-state";
 import { SourceRow } from "./source-row";
 import type { Source } from "./types";
 
 interface SourceListProps {
   sources: Source[];
-  isLoading: boolean;
-  onDelete: (key: string) => Promise<void>;
+  onDelete?: (key: string) => void;
 }
 
 const SKELETON_IDS = ["skeleton-0", "skeleton-1", "skeleton-2"];
 
-export function SourceList({ sources, isLoading, onDelete }: SourceListProps) {
-  if (isLoading) {
-    return <SourceListSkeleton />;
-  }
-
+export function SourceList({ sources, onDelete }: SourceListProps) {
   if (sources.length === 0) {
     return <EmptyState />;
   }
 
   return (
-    <div className="space-y-2">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-        <div className="w-10" /> {/* Icon spacer */}
-        <div className="min-w-0 flex-1">Name</div>
-        <div className="w-24">Status</div>
-        <div className="w-24 text-right">Records</div>
-        <div className="w-20 text-right">Size</div>
-        <div className="w-32" /> {/* Actions spacer */}
-      </div>
-
-      {/* Rows */}
-      <div className="space-y-2">
-        {sources.map((source) => (
-          <SourceRow key={source.key} source={source} onDelete={onDelete} />
-        ))}
-      </div>
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
+      {sources.map((source) => (
+        <SourceRow key={source.key} source={source} onDelete={onDelete} />
+      ))}
     </div>
   );
 }
 
-function SourceListSkeleton() {
+export function SourceListSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
       {SKELETON_IDS.map((id) => (
         <div
           key={id}
-          className="h-16 rounded-lg bg-zinc-800/50 animate-pulse"
-        />
+          className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
+        >
+          <div className="flex flex-col gap-1 pr-4">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-1/3" />
+          </div>
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-5 w-3/4" />
+        </div>
       ))}
     </div>
   );

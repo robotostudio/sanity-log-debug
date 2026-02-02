@@ -1,36 +1,11 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { AlertCircle, FileText } from "lucide-react";
 import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDashboard } from "./context";
-
-// ============================================================================
-// Empty State Component
-// ============================================================================
-
-interface EmptyStateProps {
-  title?: string;
-  description?: string;
-  icon?: ReactNode;
-}
-
-function EmptyState({
-  title = "No data",
-  description = "Select a log file to view analytics",
-  icon,
-}: EmptyStateProps) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 rounded-full bg-zinc-800/50 p-4">
-        {icon ?? <FileText className="h-8 w-8 text-zinc-500" />}
-      </div>
-      <h3 className="text-sm font-medium text-zinc-400">{title}</h3>
-      <p className="mt-1 text-xs text-zinc-500">{description}</p>
-    </div>
-  );
-}
+import { StateContainer } from "@/components/ui/state-container";
+import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 
 // ============================================================================
 // Loading State Component
@@ -42,7 +17,7 @@ interface LoadingStateProps {
 }
 
 function LoadingState({
-  height = "h-[200px]",
+  height = "h-52",
   variant = "chart",
 }: LoadingStateProps) {
   if (variant === "kpi") {
@@ -103,13 +78,21 @@ function DataCardContent({
   children,
   emptyState,
   loadingState,
-  loadingHeight = "h-[200px]",
+  loadingHeight = "h-52",
   loadingVariant = "chart",
 }: DataCardContentProps) {
-  const { state } = useDashboard();
+  const state = useDashboardData();
 
   if (state.status === "empty") {
-    return emptyState ?? <EmptyState />;
+    return (
+      emptyState ?? (
+        <StateContainer
+          icon={<FileText className="h-6 w-6 text-zinc-500" />}
+          title="No data"
+          description="Select a log file to view analytics"
+        />
+      )
+    );
   }
 
   if (state.status === "loading") {
@@ -122,7 +105,9 @@ function DataCardContent({
 
   if (state.status === "error") {
     return (
-      <EmptyState
+      <StateContainer
+        icon={<AlertCircle className="h-6 w-6 text-red-400" />}
+        iconBg="bg-red-500/10"
         title="Error loading data"
         description={state.error ?? "Something went wrong"}
       />
@@ -139,8 +124,5 @@ function DataCardContent({
 export const DataCard = {
   Root: DataCardRoot,
   Content: DataCardContent,
-  Empty: EmptyState,
   Loading: LoadingState,
 };
-
-export { useDashboard };

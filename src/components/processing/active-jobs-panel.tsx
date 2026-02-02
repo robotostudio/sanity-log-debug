@@ -46,9 +46,7 @@ function ActiveJobItem({ job }: { job: File }) {
     <div className="space-y-2 p-3 bg-muted/50 rounded-lg">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-medium truncate max-w-[300px]">
-            {job.filename}
-          </span>
+          <span className="font-medium truncate max-w-72">{job.filename}</span>
           <StatusBadge status={job.processingStatus} />
         </div>
         <span className="text-sm text-muted-foreground">
