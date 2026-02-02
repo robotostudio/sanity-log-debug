@@ -1,19 +1,3 @@
-export const CONFIG = {
-  pagination: {
-    defaultPageSize: 50,
-    maxPageSize: 500,
-  },
-  limits: {
-    endpointDistribution: 15,
-    slowRequests: 20,
-    queryExplorer: 100,
-  },
-  upload: {
-    maxFileSizeMb: 500,
-    presignedUrlExpirySec: 3600,
-  },
-} as const;
-
 export const FILTER_OPTIONS = {
   severity: ["INFO", "WARN", "ERROR"] as const,
   method: ["GET", "POST", "OPTIONS", "HEAD", "PUT"] as const,
