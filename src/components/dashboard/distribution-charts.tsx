@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { BarChart3, PieChartIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -15,66 +15,17 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { StateContainer } from "@/components/ui/state-container";
 import { CHART_COLORS, getStatusColor } from "@/lib/constants";
 import type { DistributionItem } from "@/lib/types";
-import { useDashboard } from "./data-state";
 import {
-  ChartTooltipWrapper,
-  TooltipDot,
-  GRID_PROPS,
-  AXIS_TICK_STYLE,
-  AXIS_STROKE,
   ANIMATION_DEFAULTS,
+  AXIS_STROKE,
+  AXIS_TICK_STYLE,
+  ChartTooltipWrapper,
+  GRID_PROPS,
 } from "./chart-config";
-
-// ============================================================================
-// Shared Components
-// ============================================================================
-
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="border-zinc-800 bg-transparent">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-400">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
-  );
-}
-
-function ChartEmpty({
-  title,
-  icon: Icon,
-  height = "h-[300px]",
-}: {
-  title: string;
-  icon: typeof BarChart3;
-  height?: string;
-}) {
-  return (
-    <StateContainer
-      icon={<Icon className="h-6 w-6 text-zinc-500" />}
-      title={`No ${title.toLowerCase()} data`}
-      description="Select a log file to view"
-      className={`${height} py-0`}
-    />
-  );
-}
-
-function ChartLoading({ height = "h-[300px]" }: { height?: string }) {
-  return <Skeleton className={`w-full ${height}`} />;
-}
+import { ChartCard, ChartEmpty, ChartLoading } from "./charts/chart-wrapper";
+import { useDashboard } from "./data-state";
 
 function BarTooltip({
   active,
@@ -125,13 +76,19 @@ function StatusDistributionData({ data }: { data: DistributionItem[] }) {
           tick={{ ...AXIS_TICK_STYLE, fontFamily: "monospace" }}
           width={40}
         />
-        <Tooltip content={<BarTooltip />} isAnimationActive={false} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+        <Tooltip
+          content={<BarTooltip />}
+          isAnimationActive={false}
+          cursor={{ fill: "rgba(255,255,255,0.03)" }}
+        />
         <Bar dataKey="count" {...ANIMATION_DEFAULTS} radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => (
             <Cell
               key={entry.name}
               fill={getStatusColor(Number.parseInt(entry.name, 10))}
-              fillOpacity={activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4}
+              fillOpacity={
+                activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+              }
               onMouseEnter={() => setActiveIndex(i)}
               onMouseLeave={() => setActiveIndex(null)}
             />
@@ -185,13 +142,19 @@ function EndpointDistributionData({ data }: { data: DistributionItem[] }) {
           tick={AXIS_TICK_STYLE}
           width={70}
         />
-        <Tooltip content={<BarTooltip />} isAnimationActive={false} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+        <Tooltip
+          content={<BarTooltip />}
+          isAnimationActive={false}
+          cursor={{ fill: "rgba(255,255,255,0.03)" }}
+        />
         <Bar dataKey="count" {...ANIMATION_DEFAULTS} radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => (
             <Cell
               key={entry.name}
               fill={CHART_COLORS[i % CHART_COLORS.length]}
-              fillOpacity={activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4}
+              fillOpacity={
+                activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+              }
               onMouseEnter={() => setActiveIndex(i)}
               onMouseLeave={() => setActiveIndex(null)}
             />
@@ -283,7 +246,12 @@ function DonutChartData({ data }: { data: DistributionItem[] }) {
           {...ANIMATION_DEFAULTS}
           animationBegin={100}
           activeIndex={activeIndex}
-          activeShape={(props: any) => <Sector {...props} outerRadius={(props.outerRadius as number) + 6} />}
+          activeShape={(props: any) => (
+            <Sector
+              {...props}
+              outerRadius={(props.outerRadius as number) + 6}
+            />
+          )}
           onMouseEnter={(_, index) => setActiveIndex(index)}
           onMouseLeave={() => setActiveIndex(undefined)}
         >
@@ -295,7 +263,15 @@ function DonutChartData({ data }: { data: DistributionItem[] }) {
             />
           ))}
         </Pie>
-        <text x="50%" y="46%" textAnchor="middle" fill="#f4f4f5" fontSize={18} fontWeight={600} fontFamily="var(--font-geist-mono)">
+        <text
+          x="50%"
+          y="46%"
+          textAnchor="middle"
+          fill="#f4f4f5"
+          fontSize={18}
+          fontWeight={600}
+          fontFamily="var(--font-geist-mono)"
+        >
           {total.toLocaleString()}
         </text>
         <text x="50%" y="58%" textAnchor="middle" fill="#71717a" fontSize={10}>

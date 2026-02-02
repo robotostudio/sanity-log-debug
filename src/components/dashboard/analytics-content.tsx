@@ -59,7 +59,10 @@ export function AnalyticsContent() {
           icon={<AlertCircle className="h-6 w-6 text-red-400" />}
           iconBg="bg-red-500/10"
           title="Error Loading Data"
-          description={state.error ?? "An unexpected error occurred while loading the analytics data."}
+          description={
+            state.error ??
+            "An unexpected error occurred while loading the analytics data."
+          }
         />
       </div>
     );

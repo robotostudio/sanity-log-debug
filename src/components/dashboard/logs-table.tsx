@@ -1,9 +1,9 @@
 "use client";
 
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { List } from "lucide-react";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,16 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
 import { useDashboard } from "./data-state";
 import { LogDetailSheet } from "./log-detail-sheet";
 import { SeverityBadge, StatusBadge } from "./status-badge";
-
-// ============================================================================
-// Types
-// ============================================================================
 
 interface LogsResponse {
   data: LogRecord[];
@@ -44,12 +42,6 @@ const SORT_COLUMNS = [
   "responseSize",
 ] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
-
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-// ============================================================================
-// Card Wrapper
-// ============================================================================
 
 function CardWrapper({
   children,
@@ -77,10 +69,6 @@ function CardWrapper({
   );
 }
 
-// ============================================================================
-// Empty State
-// ============================================================================
-
 function LogsTableEmpty() {
   return (
     <CardWrapper>
@@ -93,10 +81,6 @@ function LogsTableEmpty() {
     </CardWrapper>
   );
 }
-
-// ============================================================================
-// Loading State
-// ============================================================================
 
 function LogsTableLoading() {
   return (
@@ -112,10 +96,6 @@ function LogsTableLoading() {
   );
 }
 
-// ============================================================================
-// Data State
-// ============================================================================
-
 function LogsTableData() {
   const { state } = useDashboard();
   const { queryString } = useFilters();
@@ -124,7 +104,6 @@ function LogsTableData() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedRecord, setSelectedRecord] = useState<LogRecord | null>(null);
 
-  // Reset page when filters change
   // biome-ignore lint/correctness/useExhaustiveDependencies: queryString triggers page reset
   useEffect(() => {
     setPage(1);
@@ -137,11 +116,15 @@ function LogsTableData() {
   params.set("sortDir", sortDir);
   if (state.selectedFile) params.set("fileKey", state.selectedFile);
 
-  const { data, isLoading } = useSWR<LogsResponse>(
-    state.selectedFile ? `/api/logs?${params.toString()}` : null,
-    fetcher,
-    { keepPreviousData: true, revalidateOnFocus: false },
-  );
+  const paramsObj = Object.fromEntries(params.entries());
+
+  const { data, isPending } = useQuery({
+    queryKey: logKeys.list(paramsObj),
+    queryFn: () => apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`),
+    enabled: !!state.selectedFile,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
 
   const handleSort = (col: SortColumn) => {
     if (sortBy === col) {
@@ -174,7 +157,7 @@ function LogsTableData() {
     </TableHead>
   );
 
-  if (isLoading && !data) {
+  if (isPending && !data) {
     return <LogsTableLoading />;
   }
 
@@ -275,10 +258,6 @@ function LogsTableData() {
     </CardWrapper>
   );
 }
-
-// ============================================================================
-// Main Export
-// ============================================================================
 
 export function LogsTable() {
   const { state } = useDashboard();

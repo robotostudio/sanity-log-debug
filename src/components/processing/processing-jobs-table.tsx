@@ -1,6 +1,8 @@
 "use client";
 
 import { CheckCircle2, Clock, Database, Loader2, XCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StateContainer } from "@/components/ui/state-container";
 import {
   Table,
   TableBody,
@@ -9,8 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import { StateContainer } from "@/components/ui/state-container";
 import type { File } from "@/lib/db/schema";
 
 interface ProcessingJobsTableProps {

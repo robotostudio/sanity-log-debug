@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   CheckCircle2,
@@ -11,13 +12,15 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-import useSWR from "swr";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
+import { apiFetcher } from "@/lib/api-client";
 import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
+import { formatFileSize, formatRelativeTime } from "@/lib/format";
+import { processingKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 interface ProcessingStats {
@@ -38,20 +41,12 @@ interface ProcessingData {
   totalRecords: number;
 }
 
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-  }
-  return res.json();
-}
-
 export function PipelineContent() {
-  const { data, error, isLoading } = useSWR<ProcessingData>(
-    "/api/processing",
-    fetcher,
-    { refreshInterval: 2000 },
-  );
+  const { data, error, isPending } = useQuery({
+    queryKey: processingKeys.stats(),
+    queryFn: () => apiFetcher<ProcessingData>("/api/processing"),
+    refetchInterval: 2000,
+  });
 
   if (error) {
     return (
@@ -73,33 +68,33 @@ export function PipelineContent() {
 
       {/* Metrics Overview */}
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard
-            label="In Queue"
-            value={stats.pending ?? 0}
-            icon={Clock}
-            loading={isLoading}
-          />
-          <MetricCard
-            label="Processing"
-            value={stats.processing ?? 0}
-            icon={Zap}
-            loading={isLoading}
-            pulse={Boolean(stats.processing)}
-          />
-          <MetricCard
-            label="Completed"
-            value={stats.ready ?? 0}
-            icon={CheckCircle2}
-            loading={isLoading}
-            accent="success"
-          />
-          <MetricCard
-            label="Failed"
-            value={stats.failed ?? 0}
-            icon={XCircle}
-            loading={isLoading}
-            accent="error"
-          />
+        <MetricCard
+          label="In Queue"
+          value={stats.pending ?? 0}
+          icon={Clock}
+          loading={isPending}
+        />
+        <MetricCard
+          label="Processing"
+          value={stats.processing ?? 0}
+          icon={Zap}
+          loading={isPending}
+          pulse={Boolean(stats.processing)}
+        />
+        <MetricCard
+          label="Completed"
+          value={stats.ready ?? 0}
+          icon={CheckCircle2}
+          loading={isPending}
+          accent="success"
+        />
+        <MetricCard
+          label="Failed"
+          value={stats.failed ?? 0}
+          icon={XCircle}
+          loading={isPending}
+          accent="error"
+        />
       </div>
 
       {/* Active Jobs */}
@@ -128,7 +123,7 @@ export function PipelineContent() {
             Recent processing activity
           </p>
         </div>
-        <JobsTable jobs={recentJobs} loading={isLoading} />
+        <JobsTable jobs={recentJobs} loading={isPending} />
       </section>
     </div>
   );
@@ -290,14 +285,13 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
         <Link
           key={job.id}
           href={`/sources/${job.id}`}
-          className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04] cursor-pointer"
+          className="grid cursor-pointer grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
         >
           <div className="col-span-2 flex items-center gap-2">
             <div
               className={cn(
                 "h-2.5 w-2.5 rounded-full",
-                JOB_STATUS_DOT_COLORS[job.processingStatus] ??
-                  "bg-zinc-400",
+                JOB_STATUS_DOT_COLORS[job.processingStatus] ?? "bg-zinc-400",
               )}
             />
             <span className="text-sm text-zinc-300">
@@ -314,7 +308,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
             {job.recordCount?.toLocaleString() ?? "—"}
           </div>
           <div className="col-span-3 flex items-center justify-end text-zinc-500">
-            {job.processedAt ? formatDate(job.processedAt) : "—"}
+            {job.processedAt ? formatJobDate(job.processedAt) : "—"}
           </div>
         </Link>
       ))}
@@ -371,15 +365,7 @@ const JOB_STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
-}
-
-function formatDate(date: Date | string | null): string {
+function formatJobDate(date: Date | string | null): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", {
@@ -388,19 +374,4 @@ function formatDate(date: Date | string | null): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function formatRelativeTime(date: Date | string | null): string {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${diffDays}d ago`;
 }

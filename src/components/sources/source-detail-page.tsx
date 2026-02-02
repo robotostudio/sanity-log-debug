@@ -3,7 +3,6 @@
 import { AlertCircle, Loader2 } from "lucide-react";
 import { use } from "react";
 import { DashboardProvider } from "@/components/dashboard/data-state";
-import { StateContainer } from "@/components/ui/state-container";
 import {
   DonutChart,
   EndpointDistribution,
@@ -16,6 +15,7 @@ import { LogsTable } from "@/components/dashboard/logs-table";
 import { QueryExplorer } from "@/components/dashboard/query-explorer";
 import { SlowestRequests } from "@/components/dashboard/slowest-requests";
 import { TimeSeriesChart } from "@/components/dashboard/time-series-chart";
+import { StateContainer } from "@/components/ui/state-container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SourceDetailHeader } from "./source-detail-header";
 import { useSourceDetail } from "./use-source-detail";
@@ -79,7 +79,9 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
         icon={<AlertCircle className="h-6 w-6 text-red-400" />}
         iconBg="bg-red-500/10"
         title="Source not found"
-        description={error?.message ?? "The source you're looking for doesn't exist."}
+        description={
+          error?.message ?? "The source you're looking for doesn't exist."
+        }
         className="flex-1 py-24"
       />
     );
@@ -98,7 +100,10 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
       {isReady ? (
         <DashboardProvider fileKey={source.key}>
           <Tabs defaultValue="analytics">
-            <TabsList variant="line" className="-mx-[23px] w-[calc(100%+46px)] border-b border-zinc-800 pl-[15px] pr-[23px] pb-0">
+            <TabsList
+              variant="line"
+              className="-mx-[23px] w-[calc(100%+46px)] border-b border-zinc-800 pl-[15px] pr-[23px] pb-0"
+            >
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="logs">Logs</TabsTrigger>
             </TabsList>

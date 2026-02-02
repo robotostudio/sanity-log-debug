@@ -53,11 +53,7 @@ export function AreaGradientDefs() {
   return (
     <defs>
       <linearGradient id="gradient-info" x1="0" y1="0" x2="0" y2="1">
-        <stop
-          offset="0%"
-          stopColor={SEVERITY_COLORS.INFO}
-          stopOpacity={0.6}
-        />
+        <stop offset="0%" stopColor={SEVERITY_COLORS.INFO} stopOpacity={0.6} />
         <stop
           offset="100%"
           stopColor={SEVERITY_COLORS.INFO}
@@ -65,11 +61,7 @@ export function AreaGradientDefs() {
         />
       </linearGradient>
       <linearGradient id="gradient-warn" x1="0" y1="0" x2="0" y2="1">
-        <stop
-          offset="0%"
-          stopColor={SEVERITY_COLORS.WARN}
-          stopOpacity={0.6}
-        />
+        <stop offset="0%" stopColor={SEVERITY_COLORS.WARN} stopOpacity={0.6} />
         <stop
           offset="100%"
           stopColor={SEVERITY_COLORS.WARN}
@@ -77,11 +69,7 @@ export function AreaGradientDefs() {
         />
       </linearGradient>
       <linearGradient id="gradient-error" x1="0" y1="0" x2="0" y2="1">
-        <stop
-          offset="0%"
-          stopColor={SEVERITY_COLORS.ERROR}
-          stopOpacity={0.6}
-        />
+        <stop offset="0%" stopColor={SEVERITY_COLORS.ERROR} stopOpacity={0.6} />
         <stop
           offset="100%"
           stopColor={SEVERITY_COLORS.ERROR}

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, BarChart3, TriangleAlert } from "lucide-react";
+import { AsyncState } from "@/components/ui/async-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/constants";
@@ -43,7 +44,12 @@ function TrendBadge({
   const Icon = trend === "up" ? ArrowUp : ArrowDown;
 
   return (
-    <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-medium", color)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-[11px] font-medium",
+        color,
+      )}
+    >
       <Icon className="h-3 w-3" />
       {pct.toFixed(0)}%
     </span>
@@ -248,22 +254,16 @@ function KpiCardsData({
 export function KpiCards() {
   const { state } = useDashboard();
 
-  if (state.status === "empty") {
-    return <KpiCardsEmpty />;
-  }
-
-  if (state.status === "loading") {
-    return <KpiCardsLoading />;
-  }
-
-  if (state.status === "error" || !state.data?.kpis) {
-    return <KpiCardsEmpty />;
-  }
-
   return (
-    <KpiCardsData
-      data={state.data.kpis}
-      timeSeries={state.data.timeSeries ?? []}
-    />
+    <AsyncState
+      status={state.status}
+      data={state.data?.kpis ?? null}
+      empty={<KpiCardsEmpty />}
+      loading={<KpiCardsLoading />}
+    >
+      {(kpis) => (
+        <KpiCardsData data={kpis} timeSeries={state.data?.timeSeries ?? []} />
+      )}
+    </AsyncState>
   );
 }
