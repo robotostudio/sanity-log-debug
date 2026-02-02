@@ -8,6 +8,13 @@
       "when": 1769671077982,
       "tag": "0000_fresh_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770010893056,
+      "tag": "0001_lyrical_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }
