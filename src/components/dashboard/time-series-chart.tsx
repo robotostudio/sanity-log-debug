@@ -12,19 +12,20 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { AsyncState } from "@/components/ui/async-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
 import { SEVERITY_COLORS } from "@/lib/constants";
 import type { TimeSeriesBucket } from "@/lib/types";
 import {
-  ChartTooltipWrapper,
-  TooltipDot,
-  AreaGradientDefs,
-  GRID_PROPS,
-  AXIS_TICK_STYLE,
-  AXIS_STROKE,
   ANIMATION_DEFAULTS,
+  AreaGradientDefs,
+  AXIS_STROKE,
+  AXIS_TICK_STYLE,
+  ChartTooltipWrapper,
+  GRID_PROPS,
+  TooltipDot,
 } from "./chart-config";
 import { useDashboard } from "./data-state";
 
@@ -43,7 +44,15 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   return (
     <ChartTooltipWrapper>
       <p className="mb-1.5 font-mono text-zinc-400">
-        {label ? (() => { try { return format(parseISO(label), "MMM d, HH:mm"); } catch { return label; } })() : ""}
+        {label
+          ? (() => {
+              try {
+                return format(parseISO(label), "MMM d, HH:mm");
+              } catch {
+                return label;
+              }
+            })()
+          : ""}
       </p>
       {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center gap-2">
@@ -134,7 +143,11 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
             tick={AXIS_TICK_STYLE}
             tickFormatter={(v) => v.toLocaleString()}
           />
-          <Tooltip content={<CustomTooltip />} isAnimationActive={false} cursor={{ stroke: "#52525b", strokeDasharray: "4 4" }} />
+          <Tooltip
+            content={<CustomTooltip />}
+            isAnimationActive={false}
+            cursor={{ stroke: "#52525b", strokeDasharray: "4 4" }}
+          />
           <Area
             type="monotone"
             dataKey="error"
@@ -142,7 +155,12 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
             stroke={SEVERITY_COLORS.ERROR}
             fill="url(#gradient-error)"
             {...ANIMATION_DEFAULTS}
-            activeDot={{ r: 4, fill: SEVERITY_COLORS.ERROR, stroke: "#18181b", strokeWidth: 2 }}
+            activeDot={{
+              r: 4,
+              fill: SEVERITY_COLORS.ERROR,
+              stroke: "#18181b",
+              strokeWidth: 2,
+            }}
           />
           <Area
             type="monotone"
@@ -151,7 +169,12 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
             stroke={SEVERITY_COLORS.WARN}
             fill="url(#gradient-warn)"
             {...ANIMATION_DEFAULTS}
-            activeDot={{ r: 4, fill: SEVERITY_COLORS.WARN, stroke: "#18181b", strokeWidth: 2 }}
+            activeDot={{
+              r: 4,
+              fill: SEVERITY_COLORS.WARN,
+              stroke: "#18181b",
+              strokeWidth: 2,
+            }}
           />
           <Area
             type="monotone"
@@ -160,7 +183,12 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
             stroke={SEVERITY_COLORS.INFO}
             fill="url(#gradient-info)"
             {...ANIMATION_DEFAULTS}
-            activeDot={{ r: 4, fill: SEVERITY_COLORS.INFO, stroke: "#18181b", strokeWidth: 2 }}
+            activeDot={{
+              r: 4,
+              fill: SEVERITY_COLORS.INFO,
+              stroke: "#18181b",
+              strokeWidth: 2,
+            }}
           />
           <Brush
             dataKey="hour"
@@ -189,17 +217,14 @@ function TimeSeriesData({ data }: { data: TimeSeriesBucket[] }) {
 export function TimeSeriesChart() {
   const { state } = useDashboard();
 
-  if (state.status === "empty") {
-    return <TimeSeriesEmpty />;
-  }
-
-  if (state.status === "loading") {
-    return <TimeSeriesLoading />;
-  }
-
-  if (state.status === "error" || !state.data?.timeSeries) {
-    return <TimeSeriesEmpty />;
-  }
-
-  return <TimeSeriesData data={state.data.timeSeries} />;
+  return (
+    <AsyncState
+      status={state.status}
+      data={state.data?.timeSeries ?? null}
+      empty={<TimeSeriesEmpty />}
+      loading={<TimeSeriesLoading />}
+    >
+      {(data) => <TimeSeriesData data={data} />}
+    </AsyncState>
+  );
 }

@@ -2,6 +2,7 @@
 
 import { Database } from "lucide-react";
 import { useMemo, useState } from "react";
+import { AsyncState } from "@/components/ui/async-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -168,17 +169,14 @@ function QueryExplorerData({ data }: { data: QueryData[] }) {
 export function QueryExplorer() {
   const { state } = useDashboard();
 
-  if (state.status === "empty") {
-    return <QueryExplorerEmpty />;
-  }
-
-  if (state.status === "loading") {
-    return <QueryExplorerLoading />;
-  }
-
-  if (state.status === "error" || !state.data?.queryExplorer) {
-    return <QueryExplorerEmpty />;
-  }
-
-  return <QueryExplorerData data={state.data.queryExplorer} />;
+  return (
+    <AsyncState
+      status={state.status}
+      data={state.data?.queryExplorer ?? null}
+      empty={<QueryExplorerEmpty />}
+      loading={<QueryExplorerLoading />}
+    >
+      {(data) => <QueryExplorerData data={data} />}
+    </AsyncState>
+  );
 }

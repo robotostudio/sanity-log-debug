@@ -1,5 +1,5 @@
-import { DatabaseIcon } from "@/components/icons";
 import Link from "next/link";
+import { DatabaseIcon } from "@/components/icons";
 
 function AnalyticsIcon() {
   return (

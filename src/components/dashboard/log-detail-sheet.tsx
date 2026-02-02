@@ -111,9 +111,7 @@ export function LogDetailSheet({
         <SheetHeader className="px-6 pt-5 pb-0">
           <SheetTitle className="flex items-center gap-2.5 text-sm text-zinc-200">
             <StatusBadge status={record.body.status} />
-            <span className="font-mono font-medium">
-              {record.body.method}
-            </span>
+            <span className="font-mono font-medium">{record.body.method}</span>
             <SeverityBadge severity={record.severityText} />
             <span className="ml-auto font-mono text-xs text-zinc-500">
               {format(parseISO(record.timestamp), "MMM d, HH:mm:ss.SSS")}

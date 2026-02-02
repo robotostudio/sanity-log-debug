@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Clock } from "lucide-react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -17,14 +17,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
 import { LATENCY_BUCKETS } from "@/lib/constants";
 import type { DistributionItem } from "@/lib/types";
-import { useDashboard } from "./data-state";
 import {
+  ANIMATION_DEFAULTS,
+  AXIS_STROKE,
+  AXIS_TICK_STYLE,
   ChartTooltipWrapper,
   GRID_PROPS,
-  AXIS_TICK_STYLE,
-  AXIS_STROKE,
-  ANIMATION_DEFAULTS,
 } from "./chart-config";
+import { useDashboard } from "./data-state";
 
 // ============================================================================
 // Chart Card Wrapper
@@ -84,11 +84,7 @@ function LatencyData({ data }: { data: DistributionItem[] }) {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid {...GRID_PROPS} />
-          <XAxis
-            dataKey="name"
-            stroke={AXIS_STROKE}
-            tick={AXIS_TICK_STYLE}
-          />
+          <XAxis dataKey="name" stroke={AXIS_STROKE} tick={AXIS_TICK_STYLE} />
           <YAxis
             stroke={AXIS_STROKE}
             tick={AXIS_TICK_STYLE}
@@ -115,7 +111,9 @@ function LatencyData({ data }: { data: DistributionItem[] }) {
               <Cell
                 key={entry.name}
                 fill={LATENCY_BUCKETS[i]?.color ?? "#6b7280"}
-                fillOpacity={activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4}
+                fillOpacity={
+                  activeIndex === null ? 0.8 : activeIndex === i ? 1.0 : 0.4
+                }
                 onMouseEnter={() => setActiveIndex(i)}
                 onMouseLeave={() => setActiveIndex(null)}
                 className="transition-opacity"

@@ -44,7 +44,10 @@ export const METHOD_BG: Record<string, string> = {
   HEAD: "bg-violet-500/15 text-violet-400 border-violet-500/20",
 };
 
-export const PROCESSING_STATUS_BG: Record<string, { label: string; className: string }> = {
+export const PROCESSING_STATUS_BG: Record<
+  string,
+  { label: string; className: string }
+> = {
   pending: {
     label: "Queued",
     className: "bg-zinc-500/15 text-zinc-400 border-zinc-500/20",

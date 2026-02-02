@@ -1,168 +1,26 @@
 "use client";
 
 import { format } from "date-fns";
-import { CalendarIcon, ChevronDown, Loader2, Search } from "lucide-react";
+import { CalendarIcon, Loader2, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { FILTER_OPTIONS } from "@/lib/config";
 import { formatDateForUrl, parseDateStringToDate } from "@/lib/date-utils";
 import { useFilters } from "@/lib/hooks/use-filters";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "./data-state";
 import { DatePresets } from "./filters/date-presets";
 import { FilterChip, FilterChipsContainer } from "./filters/filter-chip";
-
-const SEVERITY_OPTIONS = ["INFO", "WARN", "ERROR"];
-const METHOD_OPTIONS = ["GET", "POST", "OPTIONS", "HEAD", "PUT"];
-const STATUS_OPTIONS = [
-  "200",
-  "204",
-  "304",
-  "429",
-  "402",
-  "101",
-  "0",
-  "403",
-  "400",
-  "404",
-  "502",
-  "504",
-];
-const ENDPOINT_OPTIONS = [
-  "query",
-  "images",
-  "listen",
-  "files",
-  "live",
-  "projects",
-  "socket",
-  "doc",
-  "help",
-  "history",
-  "journey",
-  "mutate",
-  "intake",
-  "users",
-  "ping",
-];
-const DOMAIN_OPTIONS = ["api", "cdn", "apicdn"];
-
-interface MultiSelectFilterProps {
-  label: string;
-  options: string[];
-  selected: string[];
-  onChange: (val: string[]) => void;
-  searchable?: boolean;
-}
-
-function MultiSelectFilter({
-  label,
-  options,
-  selected,
-  onChange,
-  searchable = false,
-}: MultiSelectFilterProps) {
-  const [search, setSearch] = useState("");
-  const filteredOptions =
-    searchable && search
-      ? options.filter((opt) =>
-          opt.toLowerCase().includes(search.toLowerCase()),
-        )
-      : options;
-
-  const isActive = selected.length > 0;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-8 gap-1.5 border border-zinc-800 bg-transparent px-3 text-xs",
-            "hover:border-zinc-700 hover:bg-zinc-800/50 hover:text-zinc-100",
-            "focus-visible:ring-zinc-400 focus-visible:ring-offset-zinc-950",
-            isActive
-              ? "border-zinc-600 bg-zinc-800/60 text-zinc-100"
-              : "text-zinc-400",
-          )}
-        >
-          {label}
-          {isActive && (
-            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-100 px-1 text-[10px] font-semibold text-zinc-900">
-              {selected.length}
-            </span>
-          )}
-          <ChevronDown className={cn("ml-0.5 h-3 w-3", isActive ? "text-zinc-400" : "text-zinc-600")} />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-48 border-zinc-700 bg-zinc-900 p-2"
-        align="start"
-      >
-        {searchable && (
-          <Input
-            placeholder={`Search ${label.toLowerCase()}...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="mb-2 h-7 border-zinc-700 bg-zinc-800 text-xs placeholder:text-zinc-500"
-          />
-        )}
-        <div className="max-h-64 space-y-0.5 overflow-y-auto" role="listbox">
-          {filteredOptions.map((opt) => {
-            const checked = selected.includes(opt);
-            const checkboxId = `filter-${label.toLowerCase()}-${opt}`;
-            const toggleOption = () => {
-              if (checked) {
-                onChange(selected.filter((s) => s !== opt));
-              } else {
-                onChange([...selected, opt]);
-              }
-            };
-            return (
-              <label
-                key={opt}
-                htmlFor={checkboxId}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-[4px] px-2 py-1.5 text-xs",
-                  "transition-colors hover:bg-zinc-800",
-                  checked ? "bg-zinc-800/60 text-zinc-100" : "text-zinc-400",
-                )}
-              >
-                <Checkbox
-                  id={checkboxId}
-                  checked={checked}
-                  onCheckedChange={toggleOption}
-                  className="h-3.5 w-3.5 border-zinc-600 data-[state=checked]:bg-zinc-100 data-[state=checked]:border-zinc-100 data-[state=checked]:text-zinc-900"
-                />
-                <span className="font-mono">{opt}</span>
-              </label>
-            );
-          })}
-        </div>
-        {isActive && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 h-6 w-full text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
-            onClick={() => onChange([])}
-          >
-            Clear all
-          </Button>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
+import { MultiSelectFilter } from "./filters/multi-select-filter";
+import { StudioToggle } from "./filters/studio-toggle";
 
 export function FilterBar() {
   const { state } = useDashboard();
@@ -284,14 +142,14 @@ export function FilterBar() {
         </div>
         <MultiSelectFilter
           label="Method"
-          options={METHOD_OPTIONS}
+          options={FILTER_OPTIONS.method}
           selected={filters.method}
           onChange={(val) => setFilters({ method: val })}
         />
 
         <MultiSelectFilter
           label="Status"
-          options={STATUS_OPTIONS}
+          options={FILTER_OPTIONS.status}
           selected={filters.status}
           onChange={(val) => setFilters({ status: val })}
           searchable
@@ -299,7 +157,7 @@ export function FilterBar() {
 
         <MultiSelectFilter
           label="Endpoint"
-          options={ENDPOINT_OPTIONS}
+          options={FILTER_OPTIONS.endpoint}
           selected={filters.endpoint}
           onChange={(val) => setFilters({ endpoint: val })}
           searchable
@@ -307,40 +165,22 @@ export function FilterBar() {
 
         <MultiSelectFilter
           label="Domain"
-          options={DOMAIN_OPTIONS}
+          options={FILTER_OPTIONS.domain}
           selected={filters.domain}
           onChange={(val) => setFilters({ domain: val })}
         />
 
         <MultiSelectFilter
           label="Severity"
-          options={SEVERITY_OPTIONS}
+          options={FILTER_OPTIONS.severity}
           selected={filters.severity}
           onChange={(val) => setFilters({ severity: val })}
         />
 
-        {/* Studio origin toggle */}
-        <div className="flex items-center gap-0.5 ml-2 pl-2 border-l border-zinc-800">
-          <span className="text-xs text-zinc-500 mr-1.5">Origin:</span>
-          <div className="flex items-center rounded-[8px] border border-zinc-800 p-0.5">
-            {(["all", "true", "false"] as const).map((opt) => (
-              <button
-                type="button"
-                key={opt}
-                className={cn(
-                  "h-6 px-2.5 rounded-[6px] text-xs font-medium transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
-                  filters.studio === opt
-                    ? "bg-zinc-100 text-zinc-900"
-                    : "text-zinc-500 hover:text-zinc-300",
-                )}
-                onClick={() => setFilters({ studio: opt })}
-              >
-                {opt === "all" ? "All" : opt === "true" ? "Studio" : "External"}
-              </button>
-            ))}
-          </div>
-        </div>
+        <StudioToggle
+          value={filters.studio}
+          onChange={(val) => setFilters({ studio: val })}
+        />
       </div>
 
       {/* Row 3: Active filter chips */}

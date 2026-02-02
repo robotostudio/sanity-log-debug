@@ -1,11 +1,11 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import {
   LogoIcon,
   SidebarCloseIcon,
   SidebarOpenIcon,
 } from "@/components/icons";
+import { cn } from "@/lib/utils";
 import { SidebarNav } from "./sidebar-nav";
 import { useSidebar } from "./sidebar-provider";
 import { UploadIndicator } from "./upload-indicator";

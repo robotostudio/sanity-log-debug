@@ -10,20 +10,31 @@ export interface FileResult {
   fileId: string;
 }
 
+type FileLookup =
+  | { by: "key"; key: string; requireReady?: boolean }
+  | { by: "id"; id: string };
+
 /**
- * Require file to exist and be ready for querying.
- * Throws 404 if not found, 202 if still processing.
+ * Unified file lookup function.
+ * Throws 404 if not found, 202 if requireReady and still processing.
  */
-export async function requireFileReady(fileKey: string): Promise<FileResult> {
+export async function getFile(lookup: FileLookup): Promise<FileResult> {
   const file = await db.query.files.findFirst({
-    where: eq(files.key, fileKey),
+    where:
+      lookup.by === "key" ? eq(files.key, lookup.key) : eq(files.id, lookup.id),
   });
 
   if (!file) {
-    throw Errors.fileNotFound(fileKey);
+    throw lookup.by === "key"
+      ? Errors.fileNotFound(lookup.key)
+      : Errors.notFound("File");
   }
 
-  if (file.processingStatus !== "ready") {
+  if (
+    lookup.by === "key" &&
+    lookup.requireReady &&
+    file.processingStatus !== "ready"
+  ) {
     throw Errors.fileProcessing(file.processingStatus);
   }
 
@@ -31,36 +42,24 @@ export async function requireFileReady(fileKey: string): Promise<FileResult> {
 }
 
 /**
+ * Require file to exist and be ready for querying.
+ * Throws 404 if not found, 202 if still processing.
+ */
+export const requireFileReady = (fileKey: string) =>
+  getFile({ by: "key", key: fileKey, requireReady: true });
+
+/**
  * Require file to exist (any processing status).
  * Throws 404 if not found.
  */
-export async function requireFileExists(fileKey: string): Promise<FileResult> {
-  const file = await db.query.files.findFirst({
-    where: eq(files.key, fileKey),
-  });
-
-  if (!file) {
-    throw Errors.fileNotFound(fileKey);
-  }
-
-  return { file, fileId: file.id };
-}
+export const requireFileExists = (fileKey: string) =>
+  getFile({ by: "key", key: fileKey });
 
 /**
  * Require file by ID (any processing status).
  * Throws 404 if not found.
  */
-export async function requireFileById(id: string): Promise<FileResult> {
-  const file = await db.query.files.findFirst({
-    where: eq(files.id, id),
-  });
-
-  if (!file) {
-    throw Errors.notFound("File");
-  }
-
-  return { file, fileId: file.id };
-}
+export const requireFileById = (id: string) => getFile({ by: "id", id });
 
 /**
  * Escape special characters for SQL LIKE patterns
