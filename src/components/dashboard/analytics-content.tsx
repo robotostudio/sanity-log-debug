@@ -1,6 +1,8 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { DatabaseIconSm } from "@/components/icons";
 import { PageHeader } from "@/components/layout/page-header";
 import { useDashboard } from "./data-state";
 import {
@@ -23,11 +25,16 @@ export function AnalyticsContent() {
   // Show empty state when no file is selected
   if (state.status === "empty") {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Analytics"
-          description="Select a data source to view analytics"
-        />
+      <div className="flex flex-1 flex-col">
+        <PageHeader title="Analytics">
+          <Link
+            href="/sources"
+            className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+          >
+            <DatabaseIconSm className="h-4 w-4" />
+            Browse sources
+          </Link>
+        </PageHeader>
         <EmptyAnalytics />
       </div>
     );
@@ -37,10 +44,15 @@ export function AnalyticsContent() {
   if (state.status === "error") {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Analytics"
-          description="Failed to load analytics data"
-        />
+        <PageHeader title="Analytics">
+          <Link
+            href="/sources"
+            className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+          >
+            <DatabaseIconSm className="h-4 w-4" />
+            Browse sources
+          </Link>
+        </PageHeader>
         <div className="flex flex-col items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 p-12 text-center">
           <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
           <h3 className="text-lg font-medium text-zinc-100">
@@ -55,15 +67,17 @@ export function AnalyticsContent() {
     );
   }
 
-  const recordCount = state.data?.totalFiltered ?? 0;
-  const description =
-    state.status === "loading"
-      ? "Loading data..."
-      : `${recordCount.toLocaleString()} records`;
-
   return (
     <div className="space-y-4">
-      <PageHeader title="Analytics" description={description} />
+      <PageHeader title="Analytics">
+        <Link
+          href="/sources"
+          className="inline-flex items-center gap-2 rounded-[8px] bg-[#f4f4f5] px-[12px] py-[8px] text-[15px] font-medium leading-[20px] text-[#09090b] transition-colors hover:bg-zinc-200"
+        >
+          <Database className="h-4 w-4" />
+          Browse sources
+        </Link>
+      </PageHeader>
 
       <FilterBar />
 
