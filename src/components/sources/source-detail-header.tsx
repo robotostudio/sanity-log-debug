@@ -95,7 +95,9 @@ export function SourceDetailHeader({
             {displayName}
           </h1>
           <div className="flex items-center gap-2 rounded-full border border-zinc-800 px-3 py-1">
-            <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[statusKey]}`} />
+            <div
+              className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_COLORS[statusKey]}`}
+            />
             <span className="text-[14px] leading-[20px] text-[#f4f4f5]">
               {STATUS_LABELS[statusKey]}
             </span>
@@ -163,9 +165,7 @@ export function SourceDetailHeader({
             ? source.recordCount.toLocaleString()
             : "\u2014"}
         </MetadataItem>
-        <MetadataItem label="Size">
-          {formatBytes(source.size)}
-        </MetadataItem>
+        <MetadataItem label="Size">{formatBytes(source.size)}</MetadataItem>
       </div>
     </div>
   );

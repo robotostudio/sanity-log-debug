@@ -1,9 +1,17 @@
-import { and, avg, count, eq, gte, inArray, lte, sql } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
+import { and, avg, count, sql } from "drizzle-orm";
+import type { NextRequest } from "next/server";
+import {
+  aggregationsQuerySchema,
+  buildFilterConditions,
+  handleError,
+  requireFileReady,
+  searchParamsToObject,
+  success,
+  type ValidatedFilters,
+  validateSchema,
+} from "@/lib/api";
 import { LATENCY_BUCKETS } from "@/lib/constants";
-import { parseFiltersFromParams } from "@/lib/data";
-import { isValidUrlDate, parseDateFromUrl } from "@/lib/date-utils";
-import { db, files, logRecords } from "@/lib/db";
+import { db, logRecords } from "@/lib/db";
 import type {
   Aggregations,
   DistributionItem,
@@ -12,105 +20,24 @@ import type {
 } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
-  const params = request.nextUrl.searchParams;
-  const filters = parseFiltersFromParams(params);
-  const fileKey = params.get("fileKey");
+  try {
+    const params = searchParamsToObject(request.nextUrl.searchParams);
+    const query = validateSchema(aggregationsQuerySchema, params);
+    const { fileId } = await requireFileReady(query.fileKey);
 
-  if (!fileKey) {
-    return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
+    const aggregations = await getSqlAggregations(fileId, query);
+    return success(aggregations);
+  } catch (error) {
+    return handleError(error, "Failed to fetch aggregations");
   }
-
-  // Get the file from database
-  const dbFile = await db.query.files.findFirst({
-    where: eq(files.key, fileKey),
-  });
-
-  if (!dbFile) {
-    return NextResponse.json({ error: "File not found" }, { status: 404 });
-  }
-
-  if (dbFile.processingStatus !== "ready") {
-    return NextResponse.json(
-      { error: "File is still processing", status: dbFile.processingStatus },
-      { status: 202 },
-    );
-  }
-
-  // Use SQL-based aggregations
-  const aggregations = await getSqlAggregations(dbFile.id, filters);
-  return NextResponse.json(aggregations);
-}
-
-interface Filters {
-  dateFrom?: string;
-  dateTo?: string;
-  severity?: string[];
-  method?: string[];
-  status?: string[];
-  endpoint?: string[];
-  domain?: string[];
-  studio?: "true" | "false" | "all";
 }
 
 async function getSqlAggregations(
   fileId: string,
-  filters: Filters,
+  filters: ValidatedFilters,
 ): Promise<Aggregations> {
-  // Build where conditions
-  const conditions = [eq(logRecords.fileId, fileId)];
+  const whereClause = buildFilterConditions(fileId, filters);
 
-  if (filters.dateFrom) {
-    const dateFromIso = isValidUrlDate(filters.dateFrom)
-      ? parseDateFromUrl(filters.dateFrom, "start")
-      : filters.dateFrom;
-    if (dateFromIso) {
-      conditions.push(gte(logRecords.timestamp, new Date(dateFromIso)));
-    }
-  }
-
-  if (filters.dateTo) {
-    const dateToIso = isValidUrlDate(filters.dateTo)
-      ? parseDateFromUrl(filters.dateTo, "end")
-      : filters.dateTo;
-    if (dateToIso) {
-      conditions.push(lte(logRecords.timestamp, new Date(dateToIso)));
-    }
-  }
-
-  if (filters.severity?.length) {
-    conditions.push(inArray(logRecords.severityText, filters.severity));
-  }
-
-  if (filters.method?.length) {
-    conditions.push(inArray(logRecords.method, filters.method));
-  }
-
-  if (filters.status?.length) {
-    conditions.push(
-      inArray(
-        logRecords.status,
-        filters.status.map((s) => Number.parseInt(s, 10)),
-      ),
-    );
-  }
-
-  if (filters.endpoint?.length) {
-    conditions.push(inArray(logRecords.endpoint, filters.endpoint));
-  }
-
-  if (filters.domain?.length) {
-    conditions.push(inArray(logRecords.domain, filters.domain));
-  }
-
-  if (filters.studio === "true") {
-    conditions.push(eq(logRecords.isStudioRequest, 1));
-  } else if (filters.studio === "false") {
-    conditions.push(eq(logRecords.isStudioRequest, 0));
-  }
-
-  const whereClause = and(...conditions);
-
-  // Execute queries in parallel
   const [
     kpisResult,
     timeSeriesResult,
@@ -121,7 +48,6 @@ async function getSqlAggregations(
     slowRequestsResult,
     queryExplorerResult,
   ] = await Promise.all([
-    // KPIs
     db
       .select({
         total: count(),
@@ -133,7 +59,6 @@ async function getSqlAggregations(
       .from(logRecords)
       .where(whereClause),
 
-    // Time series (hourly)
     db
       .select({
         hour: sql<string>`date_trunc('hour', ${logRecords.timestamp})::text`,
@@ -149,7 +74,6 @@ async function getSqlAggregations(
       )
       .orderBy(sql`date_trunc('hour', ${logRecords.timestamp})`),
 
-    // Status distribution
     db
       .select({
         status: logRecords.status,
@@ -159,7 +83,6 @@ async function getSqlAggregations(
       .where(whereClause)
       .groupBy(logRecords.status),
 
-    // Endpoint distribution
     db
       .select({
         endpoint: logRecords.endpoint,
@@ -172,7 +95,6 @@ async function getSqlAggregations(
       .orderBy(sql`count(*) DESC`)
       .limit(15),
 
-    // Domain distribution
     db
       .select({
         domain: logRecords.domain,
@@ -183,7 +105,6 @@ async function getSqlAggregations(
       .groupBy(logRecords.domain)
       .orderBy(sql`count(*) DESC`),
 
-    // Method distribution
     db
       .select({
         method: logRecords.method,
@@ -194,7 +115,6 @@ async function getSqlAggregations(
       .groupBy(logRecords.method)
       .orderBy(sql`count(*) DESC`),
 
-    // Top slow requests
     db
       .select({
         traceId: logRecords.traceId,
@@ -210,7 +130,6 @@ async function getSqlAggregations(
       .orderBy(sql`${logRecords.duration} DESC`)
       .limit(20),
 
-    // Query explorer (GROQ query stats)
     db
       .select({
         groqId: logRecords.groqQueryId,
@@ -251,7 +170,6 @@ async function getSqlAggregations(
     };
   }
 
-  // Calculate percentiles with filters applied (PostgreSQL percentile_cont)
   const percentilesResult = await db
     .select({
       p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
@@ -263,7 +181,6 @@ async function getSqlAggregations(
 
   const percentiles = percentilesResult[0];
 
-  // Calculate hour span
   const minTime = kpiRow?.minTimestamp
     ? new Date(kpiRow.minTimestamp).getTime()
     : Date.now();
@@ -282,7 +199,6 @@ async function getSqlAggregations(
     requestsPerHour: total / hourSpan,
   };
 
-  // Process time series into expected format with weighted average
   const hourMap = new Map<
     string,
     TimeSeriesBucket & { totalCount: number; totalDuration: number }
@@ -309,12 +225,10 @@ async function getSqlAggregations(
     else if (row.severity === "WARN") bucket.warn = rowCount;
     else bucket.error = rowCount;
 
-    // Accumulate for weighted average calculation
     bucket.totalCount += rowCount;
     bucket.totalDuration += rowAvgDuration * rowCount;
   }
 
-  // Calculate weighted average for each hour bucket
   const timeSeries: TimeSeriesBucket[] = Array.from(hourMap.values())
     .map((bucket) => ({
       hour: bucket.hour,
@@ -349,7 +263,6 @@ async function getSqlAggregations(
     count: Number(row.count),
   }));
 
-  // Latency buckets with filters applied
   const latencyBucketsResult = await db
     .select({
       bucket: sql<string>`CASE
@@ -418,7 +331,7 @@ async function getSqlAggregations(
     groqId: row.groqId || "",
     count: Number(row.count),
     avgDuration: Number(row.avgDuration ?? 0),
-    p99Duration: 0, // Would need separate query for this
+    p99Duration: 0,
     endpoint: row.endpoint || "",
   }));
 

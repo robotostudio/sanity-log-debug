@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
+import { apiFetcher } from "@/lib/api-client";
 import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
 import { cn } from "@/lib/utils";
@@ -38,18 +39,10 @@ interface ProcessingData {
   totalRecords: number;
 }
 
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-  }
-  return res.json();
-}
-
 export function PipelineContent() {
   const { data, error, isLoading } = useSWR<ProcessingData>(
     "/api/processing",
-    fetcher,
+    apiFetcher,
     { refreshInterval: 2000 },
   );
 
@@ -73,33 +66,33 @@ export function PipelineContent() {
 
       {/* Metrics Overview */}
       <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard
-            label="In Queue"
-            value={stats.pending ?? 0}
-            icon={Clock}
-            loading={isLoading}
-          />
-          <MetricCard
-            label="Processing"
-            value={stats.processing ?? 0}
-            icon={Zap}
-            loading={isLoading}
-            pulse={Boolean(stats.processing)}
-          />
-          <MetricCard
-            label="Completed"
-            value={stats.ready ?? 0}
-            icon={CheckCircle2}
-            loading={isLoading}
-            accent="success"
-          />
-          <MetricCard
-            label="Failed"
-            value={stats.failed ?? 0}
-            icon={XCircle}
-            loading={isLoading}
-            accent="error"
-          />
+        <MetricCard
+          label="In Queue"
+          value={stats.pending ?? 0}
+          icon={Clock}
+          loading={isLoading}
+        />
+        <MetricCard
+          label="Processing"
+          value={stats.processing ?? 0}
+          icon={Zap}
+          loading={isLoading}
+          pulse={Boolean(stats.processing)}
+        />
+        <MetricCard
+          label="Completed"
+          value={stats.ready ?? 0}
+          icon={CheckCircle2}
+          loading={isLoading}
+          accent="success"
+        />
+        <MetricCard
+          label="Failed"
+          value={stats.failed ?? 0}
+          icon={XCircle}
+          loading={isLoading}
+          accent="error"
+        />
       </div>
 
       {/* Active Jobs */}
@@ -296,8 +289,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
             <div
               className={cn(
                 "h-2.5 w-2.5 rounded-full",
-                JOB_STATUS_DOT_COLORS[job.processingStatus] ??
-                  "bg-zinc-400",
+                JOB_STATUS_DOT_COLORS[job.processingStatus] ?? "bg-zinc-400",
               )}
             />
             <span className="text-sm text-zinc-300">

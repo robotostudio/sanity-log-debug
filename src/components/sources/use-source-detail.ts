@@ -1,18 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import useSWR, { mutate } from "swr";
+import { apiFetcher, apiRequest } from "@/lib/api-client";
 import type { SourceDetail } from "./types";
-
-async function fetcher(url: string): Promise<SourceDetail> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`Failed to fetch: ${res.status}`);
-  }
-  return res.json();
-}
 
 export function useSourceDetail(id: string) {
   const router = useRouter();
@@ -20,7 +13,7 @@ export function useSourceDetail(id: string) {
 
   const { data, isLoading, error } = useSWR<SourceDetail>(
     `/api/files/${id}`,
-    fetcher,
+    apiFetcher,
     {
       refreshInterval: (data) => {
         if (
@@ -41,15 +34,10 @@ export function useSourceDetail(id: string) {
     setIsDeleting(true);
 
     try {
-      const res = await fetch("/api/files", {
+      await apiRequest("/api/files", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: data.key }),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete source");
-      }
 
       await mutate("/api/files");
       toast.success("Source deleted", { id: toastId });

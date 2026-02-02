@@ -4,21 +4,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
+import { apiFetcher } from "@/lib/api-client";
 import { useFilters } from "@/lib/hooks/use-filters";
 import type { Aggregations } from "@/lib/types";
 import { DashboardContext } from "./context";
 import type { DashboardState, DataStatus } from "./types";
-
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    throw new Error(
-      `Failed to fetch: ${res.status} ${res.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
-    );
-  }
-  return res.json();
-}
 
 interface DashboardProviderProps {
   children: ReactNode;
@@ -34,7 +24,6 @@ export function DashboardProvider({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Use prop if provided, otherwise fall back to URL param
   const selectedFile = fileKey ?? searchParams.get("file");
   const prevStatusRef = useRef<DataStatus | null>(null);
   const loadingToastRef = useRef<string | number | null>(null);
@@ -53,14 +42,13 @@ export function DashboardProvider({
 
   const { data, isLoading, isValidating, error } = useSWR<Aggregations>(
     aggUrl,
-    fetcher,
+    apiFetcher,
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
     },
   );
 
-  // Derive status from state
   const status: DataStatus = useMemo(() => {
     if (!selectedFile) return "empty";
     if (error) return "error";
@@ -68,12 +56,9 @@ export function DashboardProvider({
     return "success";
   }, [selectedFile, error, isLoading, data]);
 
-  // Handle toast notifications in useEffect to ensure they only fire once per committed render
-  // This prevents duplicate toasts from React's concurrent rendering or Strict Mode
   useEffect(() => {
     if (status === prevStatusRef.current) return;
 
-    // Dismiss any existing loading toast first
     if (loadingToastRef.current && status !== "loading") {
       if (status === "success" && data) {
         toast.success("Dashboard loaded", {
@@ -86,13 +71,11 @@ export function DashboardProvider({
           description: error?.message ?? String(error) ?? "An error occurred",
         });
       } else {
-        // Dismiss without replacement (e.g., status became "empty")
         toast.dismiss(loadingToastRef.current);
       }
       loadingToastRef.current = null;
     }
 
-    // Show new loading toast if entering loading state
     if (status === "loading") {
       loadingToastRef.current = toast.loading("Loading dashboard data...");
     }
@@ -113,7 +96,6 @@ export function DashboardProvider({
     [status, selectedFile, data, error, isFiltering],
   );
 
-  // Update URL when selecting a file - URL is the source of truth
   const selectFile = useCallback(
     (key: string | null) => {
       const params = new URLSearchParams(searchParams.toString());

@@ -1,23 +1,14 @@
-import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
-import { db, files } from "@/lib/db";
+import { handleError, requireFileById, success } from "@/lib/api";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-
   try {
-    const file = await db.query.files.findFirst({
-      where: eq(files.id, id),
-    });
+    const { id } = await params;
+    const { file } = await requireFileById(id);
 
-    if (!file) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
+    return success({
       id: file.id,
       key: file.key,
       filename: file.filename,
@@ -28,9 +19,6 @@ export async function GET(
       processedAt: file.processedAt?.toISOString() ?? null,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch file" },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to fetch file");
   }
 }

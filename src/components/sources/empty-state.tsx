@@ -142,9 +142,9 @@ export function EmptyState({ onUpload }: EmptyStateProps) {
 
             <p className="text-[18px] leading-[28px] text-[#a1a1aa]">
               Upload your first{" "}
-              <span className="text-[#f4f4f5]">.ndjson (upto 500 MB)</span>{" "}
-              file to start exploring your data. We&apos;ll parse and validate
-              it automatically.
+              <span className="text-[#f4f4f5]">.ndjson (upto 500 MB)</span> file
+              to start exploring your data. We&apos;ll parse and validate it
+              automatically.
             </p>
           </div>
         </div>

@@ -3,32 +3,21 @@
 import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import useSWR, { mutate } from "swr";
+import { apiFetcher, apiRequest } from "@/lib/api-client";
 import type { Source } from "./types";
 import { useUpload } from "./upload-provider";
 
 const POLL_INTERVAL_MS = 2000;
 const FILES_API_ENDPOINT = "/api/files";
 
-async function fetcher(url: string) {
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    throw new Error(
-      `Failed to fetch files: ${res.status} ${res.statusText}${errorBody ? ` - ${errorBody}` : ""}`,
-    );
-  }
-  return res.json();
-}
-
 export function useSources() {
   const { isUploading, uploadProgress, uploadFile } = useUpload();
 
   const { data, isLoading, error } = useSWR<{ files: Source[] }>(
     FILES_API_ENDPOINT,
-    fetcher,
+    apiFetcher,
   );
 
-  // Determine if we should poll based on whether any sources are processing
   const hasProcessingSources = useMemo(() => {
     return data?.files?.some(
       (f) =>
@@ -36,10 +25,9 @@ export function useSources() {
     );
   }, [data?.files]);
 
-  // Poll for updates when sources are processing
   useSWR<{ files: Source[] }>(
     hasProcessingSources ? FILES_API_ENDPOINT : null,
-    fetcher,
+    apiFetcher,
     {
       refreshInterval: POLL_INTERVAL_MS,
       dedupingInterval: POLL_INTERVAL_MS / 2,
@@ -50,15 +38,10 @@ export function useSources() {
     const toastId = toast.loading("Deleting source...");
 
     try {
-      const res = await fetch(FILES_API_ENDPOINT, {
+      await apiRequest(FILES_API_ENDPOINT, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key }),
       });
-
-      if (!res.ok) {
-        throw new Error("Failed to delete source");
-      }
 
       await mutate(FILES_API_ENDPOINT);
 
