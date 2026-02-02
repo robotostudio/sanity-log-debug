@@ -2,7 +2,7 @@
 
 import { Logger } from "@/lib/logger";
 
-import { createBatches } from "./steps/create-batches";
+import { streamBatches } from "./steps/create-batches";
 import { deleteFromR2 } from "./steps/delete-from-r2";
 import { markComplete } from "./steps/mark-complete";
 import { markFailed } from "./steps/mark-failed";
@@ -39,11 +39,8 @@ export async function processLogFile(
     let totalFailedRecords = 0;
     let batchesProcessed = 0;
 
-    // Create all batches first (workflow steps must return serializable values)
-    const { batches } = await createBatches({ fileKey });
-
-    // Process each batch
-    for (const batch of batches) {
+    // Stream batches one at a time to avoid large payloads
+    for await (const batch of streamBatches(fileKey)) {
       const result = await processBatch({ fileId, batch });
 
       if (!result.skipped) {
