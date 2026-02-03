@@ -5,7 +5,7 @@ import { getFileStream } from "@/lib/r2";
 import type { LogRecord } from "@/lib/types";
 
 const logger = new Logger("workflow/create-batches");
-export const BATCH_SIZE = 1000;
+const BATCH_SIZE = 1000;
 const MAX_ERROR_RATE = 0.5; // Abort if >50% of lines fail to parse
 
 export interface ParsedRecord {
