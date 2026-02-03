@@ -1,6 +1,7 @@
 "use client";
 
 import { DatabaseIconSm } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 
 function SourcesIcon() {
   return (
@@ -149,14 +150,14 @@ export function EmptyState({ onUpload }: EmptyStateProps) {
           </div>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="surface"
           onClick={onUpload}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-4 py-2 text-lg font-medium leading-7 text-[#09090b] transition-colors hover:bg-zinc-200"
+          className="rounded-lg px-4 py-2 text-lg leading-7"
         >
           <DatabaseIconSm className="h-5 w-5" />
           Upload sources
-        </button>
+        </Button>
       </div>
     </div>
   );

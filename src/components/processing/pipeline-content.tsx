@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
@@ -324,12 +325,9 @@ function EmptyJobsState() {
       title="No processing history"
       description="Upload your first data source to begin ingesting records into the system."
       action={
-        <Link
-          href="/sources"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
-        >
-          Upload Data Source
-        </Link>
+        <Button variant="surface" asChild className="rounded-lg px-3 py-2 text-base leading-5">
+          <Link href="/sources">Upload Data Source</Link>
+        </Button>
       }
     />
   );
