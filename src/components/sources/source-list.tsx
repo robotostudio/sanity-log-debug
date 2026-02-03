@@ -21,8 +21,8 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
     <div className="overflow-hidden rounded-lg border border-zinc-800">
       {/* Header */}
       <div className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
-        <div className="col-span-3">Name</div>
-        <div className="col-span-2">Status</div>
+        <div className="col-span-4">Name</div>
+        <div className="col-span-1">Status</div>
         <div className="col-span-2 text-right">Records</div>
         <div className="col-span-2 text-right">Size</div>
         <div className="col-span-2 text-right">Date Range</div>
@@ -42,8 +42,8 @@ export function SourceListSkeleton() {
     <div className="overflow-hidden rounded-lg border border-zinc-800">
       {/* Header */}
       <div className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
-        <div className="col-span-3">Name</div>
-        <div className="col-span-2">Status</div>
+        <div className="col-span-4">Name</div>
+        <div className="col-span-1">Status</div>
         <div className="col-span-2 text-right">Records</div>
         <div className="col-span-2 text-right">Size</div>
         <div className="col-span-2 text-right">Date Range</div>
@@ -56,12 +56,12 @@ export function SourceListSkeleton() {
           key={id}
           className="grid grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
         >
-          <div className="col-span-3 flex flex-col gap-1">
+          <div className="col-span-4 flex flex-col gap-1">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/3" />
           </div>
-          <div className="col-span-2 flex items-center">
-            <Skeleton className="h-4 w-20" />
+          <div className="col-span-1 flex items-center">
+            <Skeleton className="h-4 w-full" />
           </div>
           <div className="col-span-2 flex items-center justify-end">
             <Skeleton className="h-4 w-16" />
@@ -73,7 +73,7 @@ export function SourceListSkeleton() {
             <Skeleton className="h-4 w-20" />
           </div>
           <div className="col-span-1 flex items-center justify-end">
-            <Skeleton className="h-4 w-12" />
+            <Skeleton className="h-4 w-full" />
           </div>
         </div>
       ))}
