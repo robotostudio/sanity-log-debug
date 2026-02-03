@@ -103,7 +103,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* Size */}
-      <div className="col-span-1 flex items-center justify-end text-zinc-500">
+      <div className="col-span-2 flex items-center justify-end text-zinc-500">
         {formatBytes(source.size)}
       </div>
 
@@ -113,7 +113,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* View Analytics */}
-      <div className="col-span-2 flex items-center justify-end">
+      <div className="col-span-1 flex items-center justify-end">
         <div
           className={cn(
             "inline-flex items-center gap-2 text-zinc-300",

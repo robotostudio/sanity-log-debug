@@ -24,9 +24,9 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
         <div className="col-span-3">Name</div>
         <div className="col-span-2">Status</div>
         <div className="col-span-2 text-right">Records</div>
-        <div className="col-span-1 text-right">Size</div>
+        <div className="col-span-2 text-right">Size</div>
         <div className="col-span-2 text-right">Date Range</div>
-        <div className="col-span-2 text-right">Analytics</div>
+        <div className="col-span-1 text-right">Analytics</div>
       </div>
 
       {/* Rows */}
@@ -45,9 +45,9 @@ export function SourceListSkeleton() {
         <div className="col-span-3">Name</div>
         <div className="col-span-2">Status</div>
         <div className="col-span-2 text-right">Records</div>
-        <div className="col-span-1 text-right">Size</div>
+        <div className="col-span-2 text-right">Size</div>
         <div className="col-span-2 text-right">Date Range</div>
-        <div className="col-span-2 text-right">Analytics</div>
+        <div className="col-span-1 text-right">Analytics</div>
       </div>
 
       {/* Skeleton Rows */}
@@ -66,14 +66,14 @@ export function SourceListSkeleton() {
           <div className="col-span-2 flex items-center justify-end">
             <Skeleton className="h-4 w-16" />
           </div>
-          <div className="col-span-1 flex items-center justify-end">
-            <Skeleton className="h-4 w-12" />
+          <div className="col-span-2 flex items-center justify-end">
+            <Skeleton className="h-4 w-14" />
           </div>
           <div className="col-span-2 flex items-center justify-end">
             <Skeleton className="h-4 w-20" />
           </div>
-          <div className="col-span-2 flex items-center justify-end">
-            <Skeleton className="h-4 w-16" />
+          <div className="col-span-1 flex items-center justify-end">
+            <Skeleton className="h-4 w-12" />
           </div>
         </div>
       ))}
