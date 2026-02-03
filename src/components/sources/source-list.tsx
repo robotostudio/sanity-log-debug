@@ -19,6 +19,17 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">
+      {/* Header */}
+      <div className="flex items-center gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <div className="w-[26%] min-w-0">Name</div>
+        <div className="w-[10%]">Status</div>
+        <div className="w-[14%] text-right">Records</div>
+        <div className="w-[11%] text-right">Size</div>
+        <div className="w-[17%] text-right">Date Range</div>
+        <div className="w-[14%] text-right">Analytics</div>
+      </div>
+
+      {/* Rows */}
       {sources.map((source) => (
         <SourceRow key={source.key} source={source} onDelete={onDelete} />
       ))}
@@ -29,20 +40,41 @@ export function SourceList({ sources, onDelete }: SourceListProps) {
 export function SourceListSkeleton() {
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">
+      {/* Header */}
+      <div className="flex items-center gap-4 border-b border-zinc-800 px-4 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <div className="w-[26%] min-w-0">Name</div>
+        <div className="w-[10%]">Status</div>
+        <div className="w-[14%] text-right">Records</div>
+        <div className="w-[11%] text-right">Size</div>
+        <div className="w-[17%] text-right">Date Range</div>
+        <div className="w-[14%] text-right">Analytics</div>
+      </div>
+
+      {/* Skeleton Rows */}
       {SKELETON_IDS.map((id) => (
         <div
           key={id}
-          className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
+          className="flex items-center gap-4 border-b border-zinc-800 px-4 py-3.5 last:border-b-0"
         >
-          <div className="flex flex-col gap-1 pr-4">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-5 w-1/3" />
+          <div className="w-[26%] min-w-0 flex flex-col gap-1">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/3" />
           </div>
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-5 w-3/4" />
+          <div className="w-[10%] flex items-center">
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <div className="w-[14%] flex items-center justify-end">
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <div className="w-[11%] flex items-center justify-end">
+            <Skeleton className="h-4 w-14" />
+          </div>
+          <div className="w-[17%] flex items-center justify-end">
+            <Skeleton className="h-4 w-16" />
+          </div>
+          <div className="w-[14%] flex items-center justify-end">
+            <Skeleton className="h-4 w-14" />
+          </div>
         </div>
       ))}
     </div>

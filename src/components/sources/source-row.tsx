@@ -55,10 +55,8 @@ function StatusDot({ status }: { status?: ProcessingStatus }) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className={cn("h-3 w-3 rounded-full", STATUS_DOT_COLORS[key])} />
-      <span className="text-base leading-6 text-[#f4f4f5]">
-        {STATUS_LABELS[key]}
-      </span>
+      <div className={cn("h-2.5 w-2.5 rounded-full", STATUS_DOT_COLORS[key])} />
+      <span className="text-sm text-zinc-300">{STATUS_LABELS[key]}</span>
     </div>
   );
 }
@@ -82,62 +80,49 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
   return (
     <Link
       href={`/sources/${source.id}`}
-      className="grid grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr] items-center border-b border-zinc-800 px-4 py-3.5 last:border-b-0 transition-colors duration-150 hover:bg-white/[0.02]"
+      className="flex cursor-pointer items-center gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
     >
-      {/* Name + time */}
-      <div className="flex flex-col gap-0.5 min-w-0 pr-4">
-        <p className="truncate text-base leading-6 text-[#f4f4f5]">
-          {displayName}
-        </p>
-        <p className="text-base leading-6 text-[#a1a1aa]">
+      {/* Name */}
+      <div className="w-[26%] min-w-0 flex flex-col gap-0.5">
+        <p className="truncate text-zinc-200">{displayName}</p>
+        <p className="text-xs text-zinc-500">
           {formatRelativeTime(source.lastModified)}
         </p>
       </div>
 
       {/* Status */}
-      <div>
+      <div className="w-[10%] flex items-center">
         <StatusDot status={source.processingStatus} />
       </div>
 
       {/* Records */}
-      <div>
-        <p className="text-base leading-6 text-[#f4f4f5]">
-          {source.recordCount != null ? (
-            <>
-              {source.recordCount.toLocaleString()}{" "}
-              <span className="text-[#a1a1aa]">records</span>
-            </>
-          ) : (
-            <span className="text-[#a1a1aa]">&mdash;</span>
-          )}
-        </p>
+      <div className="w-[14%] flex items-center justify-end tabular-nums text-zinc-300">
+        {source.recordCount != null
+          ? source.recordCount.toLocaleString()
+          : "—"}
       </div>
 
       {/* Size */}
-      <div>
-        <p className="text-base leading-6 text-[#f4f4f5]">
-          {formatBytes(source.size)}
-        </p>
+      <div className="w-[11%] flex items-center justify-end text-zinc-500">
+        {formatBytes(source.size)}
       </div>
 
       {/* Date range */}
-      <div>
-        <p className="text-base leading-6 text-[#f4f4f5]">
-          {formatDateRange(source.lastModified)}
-        </p>
+      <div className="w-[17%] flex items-center justify-end text-zinc-500">
+        {formatDateRange(source.lastModified)}
       </div>
 
       {/* View Analytics */}
-      <div>
+      <div className="w-[14%] flex items-center justify-end">
         <div
           className={cn(
-            "inline-flex items-center gap-2 text-base leading-6 text-[#f4f4f5]",
-            !isReady && "text-[#a1a1aa]",
+            "inline-flex items-center gap-2 text-zinc-300",
+            !isReady && "text-zinc-500",
             isProcessing && "opacity-40",
           )}
         >
           <AnalyticsIconSmall />
-          View Analytics
+          <span>View</span>
         </div>
       </div>
     </Link>

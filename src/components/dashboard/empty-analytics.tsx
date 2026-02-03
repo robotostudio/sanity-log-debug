@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DatabaseIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 
 function AnalyticsIcon() {
   return (
@@ -98,13 +99,12 @@ export function EmptyAnalytics() {
           </div>
         </div>
 
-        <Link
-          href="/sources"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-4 py-2 text-lg font-medium leading-7 text-[#09090b] transition-colors hover:bg-zinc-200"
-        >
-          <DatabaseIcon className="h-5 w-5" />
-          Browse sources
-        </Link>
+        <Button variant="surface" asChild className="rounded-lg px-4 py-2 text-lg leading-7">
+          <Link href="/sources">
+            <DatabaseIcon className="h-5 w-5" />
+            Browse sources
+          </Link>
+        </Button>
       </div>
     </div>
   );

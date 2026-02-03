@@ -3,6 +3,7 @@
 import { AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { DatabaseIconSm } from "@/components/icons";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { StateContainer } from "@/components/ui/state-container";
 import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
@@ -28,13 +29,12 @@ export function AnalyticsContent() {
     return (
       <div className="flex flex-1 flex-col">
         <PageHeader title="Analytics">
-          <Link
-            href="/sources"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
-          >
-            <DatabaseIconSm className="h-4 w-4" />
-            Browse sources
-          </Link>
+          <Button variant="surface" asChild className="rounded-lg px-3 py-2 text-base leading-5">
+            <Link href="/sources">
+              <DatabaseIconSm className="h-4 w-4" />
+              Browse sources
+            </Link>
+          </Button>
         </PageHeader>
         <EmptyAnalytics />
       </div>
@@ -46,13 +46,12 @@ export function AnalyticsContent() {
     return (
       <div className="space-y-6">
         <PageHeader title="Analytics">
-          <Link
-            href="/sources"
-            className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
-          >
-            <DatabaseIconSm className="h-4 w-4" />
-            Browse sources
-          </Link>
+          <Button variant="surface" asChild className="rounded-lg px-3 py-2 text-base leading-5">
+            <Link href="/sources">
+              <DatabaseIconSm className="h-4 w-4" />
+              Browse sources
+            </Link>
+          </Button>
         </PageHeader>
         <StateContainer
           variant="card"
@@ -71,13 +70,12 @@ export function AnalyticsContent() {
   return (
     <div className="space-y-4">
       <PageHeader title="Analytics">
-        <Link
-          href="/sources"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#f4f4f5] px-3 py-2 text-base font-medium leading-5 text-[#09090b] transition-colors hover:bg-zinc-200"
-        >
-          <DatabaseIconSm className="h-4 w-4" />
-          Browse sources
-        </Link>
+        <Button variant="surface" asChild className="rounded-lg px-3 py-2 text-base leading-5">
+          <Link href="/sources">
+            <DatabaseIconSm className="h-4 w-4" />
+            Browse sources
+          </Link>
+        </Button>
       </PageHeader>
 
       <FilterBar />
