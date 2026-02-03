@@ -54,10 +54,10 @@ function StatusDot({ status }: { status?: ProcessingStatus }) {
   const key = status && status in STATUS_DOT_COLORS ? status : "legacy";
 
   return (
-    <div
-      className={cn("h-2.5 w-2.5 rounded-full", STATUS_DOT_COLORS[key])}
-      title={STATUS_LABELS[key]}
-    />
+    <div className="flex items-center gap-2">
+      <div className={cn("h-2.5 w-2.5 rounded-full", STATUS_DOT_COLORS[key])} />
+      <span className="text-sm text-zinc-300">{STATUS_LABELS[key]}</span>
+    </div>
   );
 }
 
@@ -83,7 +83,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       className="grid cursor-pointer grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
     >
       {/* Name */}
-      <div className="col-span-4 flex flex-col gap-0.5 min-w-0">
+      <div className="col-span-3 flex flex-col gap-0.5 min-w-0">
         <p className="truncate text-zinc-200">{displayName}</p>
         <p className="text-xs text-zinc-500">
           {formatRelativeTime(source.lastModified)}
@@ -91,7 +91,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* Status */}
-      <div className="col-span-1 flex items-center">
+      <div className="col-span-2 flex items-center">
         <StatusDot status={source.processingStatus} />
       </div>
 
@@ -103,7 +103,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* Size */}
-      <div className="col-span-2 flex items-center justify-end text-zinc-500">
+      <div className="col-span-1 flex items-center justify-end text-zinc-500">
         {formatBytes(source.size)}
       </div>
 
@@ -113,7 +113,7 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* View Analytics */}
-      <div className="col-span-1 flex items-center justify-end">
+      <div className="col-span-2 flex items-center justify-end">
         <div
           className={cn(
             "inline-flex items-center gap-2 text-zinc-300",
