@@ -80,10 +80,10 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
   return (
     <Link
       href={`/sources/${source.id}`}
-      className="grid cursor-pointer grid-cols-12 gap-4 border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
+      className="flex cursor-pointer items-center border-b border-zinc-800 px-4 py-3.5 text-sm transition-colors duration-150 last:border-b-0 hover:bg-white/[0.04]"
     >
       {/* Name */}
-      <div className="col-span-3 flex flex-col gap-0.5 min-w-0">
+      <div className="w-[28%] min-w-0 flex flex-col gap-0.5">
         <p className="truncate text-zinc-200">{displayName}</p>
         <p className="text-xs text-zinc-500">
           {formatRelativeTime(source.lastModified)}
@@ -91,29 +91,29 @@ export function SourceRow({ source, onDelete }: SourceRowProps) {
       </div>
 
       {/* Status */}
-      <div className="col-span-2 flex items-center">
+      <div className="w-[12%] flex items-center">
         <StatusDot status={source.processingStatus} />
       </div>
 
       {/* Records */}
-      <div className="col-span-2 flex items-center justify-end tabular-nums text-zinc-300">
+      <div className="w-[15%] flex items-center justify-end tabular-nums text-zinc-300">
         {source.recordCount != null
           ? source.recordCount.toLocaleString()
           : "—"}
       </div>
 
       {/* Size */}
-      <div className="col-span-1 flex items-center justify-end text-zinc-500">
+      <div className="w-[12%] flex items-center justify-end text-zinc-500">
         {formatBytes(source.size)}
       </div>
 
       {/* Date range */}
-      <div className="col-span-2 flex items-center justify-end text-zinc-500">
+      <div className="w-[18%] flex items-center justify-end text-zinc-500">
         {formatDateRange(source.lastModified)}
       </div>
 
       {/* View Analytics */}
-      <div className="col-span-2 flex items-center justify-end">
+      <div className="w-[15%] flex items-center justify-end">
         <div
           className={cn(
             "inline-flex items-center gap-2 text-zinc-300",
