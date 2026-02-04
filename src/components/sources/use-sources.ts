@@ -6,13 +6,11 @@ import { toast } from "sonner";
 import { apiFetcher, apiRequest } from "@/lib/api-client";
 import { fileKeys } from "@/lib/query-keys";
 import type { Source } from "./types";
-import { useUpload } from "./upload-provider";
 
 const POLL_INTERVAL_MS = 2000;
 const FILES_API_ENDPOINT = "/api/files";
 
 export function useSources() {
-  const { isUploading, uploadProgress, uploadFile } = useUpload();
   const queryClient = useQueryClient();
 
   const { data, isPending, error } = useQuery({
@@ -78,9 +76,6 @@ export function useSources() {
     sources: data?.files ?? [],
     isLoading: isPending,
     error,
-    isUploading,
-    uploadProgress,
-    uploadFile,
     deleteSource,
   };
 }

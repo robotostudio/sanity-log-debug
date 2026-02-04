@@ -2,7 +2,6 @@
 
 import { Logger } from "@/lib/logger";
 import { getFileStream } from "@/lib/r2";
-import type { LogRecord } from "@/lib/types";
 
 const logger = new Logger("workflow/create-batches");
 const BATCH_SIZE = 1000;
@@ -49,36 +48,145 @@ interface ParseResult {
   error?: string;
 }
 
+interface CsvRow {
+  timestamp?: string;
+  traceId?: string;
+  spanId?: string;
+  severityText?: string;
+  severityNumber?: string;
+  body?: string;
+  attributes?: string;
+  resource?: string;
+}
+
+/**
+ * Parse a CSV line handling quoted fields with commas and escaped quotes
+ */
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < line.length) {
+    const char = line[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        // Check for escaped quote (doubled)
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          current += '"';
+          i += 2;
+          continue;
+        }
+        // End of quoted field
+        inQuotes = false;
+        i++;
+        continue;
+      }
+      current += char;
+      i++;
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+        i++;
+        continue;
+      }
+      if (char === ",") {
+        fields.push(current);
+        current = "";
+        i++;
+        continue;
+      }
+      current += char;
+      i++;
+    }
+  }
+
+  // Push the last field
+  fields.push(current);
+
+  return fields;
+}
+
 function isValidTimestamp(ts: unknown): ts is string {
   if (typeof ts !== "string" || !ts) return false;
   const date = new Date(ts);
   return !Number.isNaN(date.getTime());
 }
 
-function safeParseRecord(line: string, _lineNumber: number): ParseResult {
+function safeParseJson<T>(jsonStr: string | undefined): T | undefined {
+  if (!jsonStr) return undefined;
   try {
-    const record = JSON.parse(line) as LogRecord;
+    return JSON.parse(jsonStr) as T;
+  } catch {
+    return undefined;
+  }
+}
 
+interface BodyJson {
+  duration?: number;
+  insertId?: string;
+  method?: string;
+  referer?: string;
+  remoteIp?: string;
+  requestSize?: number;
+  responseSize?: number;
+  status?: number;
+  url?: string;
+  userAgent?: string;
+}
+
+interface AttributesJson {
+  sanity?: {
+    projectId?: string;
+    dataset?: string;
+    domain?: string;
+    endpoint?: string;
+    groqQueryIdentifier?: string;
+    apiVersion?: string;
+    tags?: string[];
+    studioRequest?: boolean;
+  };
+}
+
+interface ResourceJson {
+  service?: {
+    name?: string;
+  };
+  sanity?: {
+    type?: string;
+    version?: string;
+  };
+}
+
+function safeParseRecord(
+  row: CsvRow,
+  _lineNumber: number,
+): ParseResult {
+  try {
     // Validate required timestamp
-    if (!isValidTimestamp(record.timestamp)) {
+    if (!isValidTimestamp(row.timestamp)) {
       return {
         success: false,
-        error: `Invalid or missing timestamp: ${record.timestamp}`,
+        error: `Invalid or missing timestamp: ${row.timestamp}`,
       };
     }
 
-    const body = record.body;
-    const sanity = record.attributes?.sanity;
-    const resource = record.resource;
+    const body = safeParseJson<BodyJson>(row.body);
+    const attributes = safeParseJson<AttributesJson>(row.attributes);
+    const resource = safeParseJson<ResourceJson>(row.resource);
+
+    const sanity = attributes?.sanity;
 
     return {
       success: true,
       record: {
-        timestamp: record.timestamp,
-        traceId: record.traceId,
-        spanId: record.spanId,
-        severityText: record.severityText,
-        severityNumber: record.severityNumber,
+        timestamp: row.timestamp,
+        traceId: row.traceId || undefined,
+        spanId: row.spanId || undefined,
+        severityText: row.severityText || undefined,
+        severityNumber: row.severityNumber ? Number.parseInt(row.severityNumber, 10) : undefined,
         duration: body?.duration,
         insertId: body?.insertId,
         method: body?.method,
@@ -105,7 +213,7 @@ function safeParseRecord(line: string, _lineNumber: number): ParseResult {
   } catch (err) {
     return {
       success: false,
-      error: `JSON parse error: ${err instanceof Error ? err.message : String(err)}`,
+      error: `Parse error: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
@@ -158,11 +266,13 @@ export interface CountLinesResult {
   totalLines: number;
   batchSize: number;
   batches: BatchMetadata[];
+  headers: string[];
 }
 
 /**
- * Fast line count - only counts newlines, doesn't parse JSON.
+ * Fast line count - only counts newlines, doesn't parse content.
  * Returns batch metadata with line ranges for each batch.
+ * Note: Line 1 is the header, data starts at line 2.
  */
 export async function countLines({
   fileKey,
@@ -176,6 +286,8 @@ export async function countLines({
   const decoder = new TextDecoder();
   let totalLines = 0;
   let buffer = "";
+  let headers: string[] = [];
+  let isFirstLine = true;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -194,20 +306,28 @@ export async function countLines({
 
     for (const line of lines) {
       if (line.trim()) {
-        totalLines++;
+        if (isFirstLine) {
+          // Parse header row
+          headers = parseCsvLine(line.trim());
+          isFirstLine = false;
+        } else {
+          totalLines++;
+        }
       }
     }
   }
 
   reader.releaseLock();
 
-  // Calculate batch metadata
+  // Calculate batch metadata (data lines only, excluding header)
   const batches: BatchMetadata[] = [];
   const totalBatches = Math.ceil(totalLines / BATCH_SIZE);
 
   for (let i = 0; i < totalBatches; i++) {
-    const startLine = i * BATCH_SIZE + 1;
-    const endLine = Math.min((i + 1) * BATCH_SIZE, totalLines);
+    // Line numbers are 1-indexed, with line 1 being header
+    // Data starts at line 2, so batch 0 covers lines 2 to (2 + BATCH_SIZE - 1)
+    const startLine = i * BATCH_SIZE + 2; // +2 because header is line 1
+    const endLine = Math.min((i + 1) * BATCH_SIZE + 1, totalLines + 1);
     batches.push({
       batchIndex: i,
       startLine,
@@ -220,12 +340,14 @@ export async function countLines({
     totalLines,
     totalBatches: batches.length,
     batchSize: BATCH_SIZE,
+    headers: headers.length,
   });
 
   return {
     totalLines,
     batchSize: BATCH_SIZE,
     batches,
+    headers,
   };
 }
 
@@ -235,7 +357,7 @@ export interface ReadBatchResult {
 }
 
 /**
- * Reads and parses a specific batch from file by line range.
+ * Reads and parses a specific batch from CSV file by line range.
  * Called by processBatch - not a workflow step itself.
  */
 export async function readBatchFromFile(
@@ -251,9 +373,16 @@ export async function readBatchFromFile(
   let lineNumber = 0;
   let totalErrors = 0;
   let totalLines = 0;
+  let headers: string[] = [];
 
   for await (const line of readLines(stream)) {
     lineNumber++;
+
+    // First line is header
+    if (lineNumber === 1) {
+      headers = parseCsvLine(line);
+      continue;
+    }
 
     // Skip lines before our range
     if (lineNumber < startLine) continue;
@@ -262,7 +391,19 @@ export async function readBatchFromFile(
     if (lineNumber > endLine) break;
 
     totalLines++;
-    const result = safeParseRecord(line, lineNumber);
+
+    // Parse CSV line into fields
+    const fields = parseCsvLine(line);
+
+    // Map fields to row object using headers
+    const row: CsvRow = {};
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      const value = fields[i] ?? "";
+      (row as Record<string, string>)[header] = value;
+    }
+
+    const result = safeParseRecord(row, lineNumber);
 
     if (result.success && result.record) {
       records.push(result.record);
@@ -274,7 +415,7 @@ export async function readBatchFromFile(
         rawLine: line.length > 200 ? `${line.substring(0, 200)}...` : line,
       });
 
-      // Check error rate
+      // Check error rate after processing some lines
       if (totalLines >= 100) {
         const errorRate = totalErrors / totalLines;
         if (errorRate > MAX_ERROR_RATE) {

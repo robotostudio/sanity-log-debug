@@ -27,9 +27,21 @@ export interface SourceDetail {
 }
 
 export interface UploadProgress {
-  status: "idle" | "uploading" | "complete" | "error";
+  status: "idle" | "uploading" | "processing" | "complete" | "error" | "cancelled";
   percentage: number;
   bytesUploaded: number;
   bytesTotal: number;
   fileName: string | null;
+  // Chunked upload details
+  sessionId?: string;
+  totalChunks?: number;
+  uploadedChunks?: number;
+  currentChunk?: number;
+  bytesPerSecond?: number | null;
+  estimatedSecondsRemaining?: number | null;
+  // Processing details
+  jobId?: string;
+  processedRows?: number;
+  totalRows?: number | null;
+  failedRows?: number;
 }

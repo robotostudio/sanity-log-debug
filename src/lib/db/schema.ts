@@ -1,10 +1,14 @@
+import { relations } from "drizzle-orm";
 import {
+  bigint,
   index,
   integer,
+  jsonb,
   pgTable,
   real,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const files = pgTable("files", {
@@ -88,9 +92,131 @@ export const batchProgress = pgTable(
   (table) => [index("idx_batch_file_index").on(table.fileId, table.batchIndex)],
 );
 
+// ============================================================================
+// Upload Session Tables (for chunked/resumable uploads)
+// ============================================================================
+
+/**
+ * Upload session tracking for chunked/multipart uploads
+ * Supports R2 multipart upload API with resume capability
+ */
+export const uploadSessions = pgTable(
+  "upload_sessions",
+  {
+    id: text("id").primaryKey(),
+    fileId: text("file_id").references(() => files.id, { onDelete: "cascade" }),
+    r2UploadId: text("r2_upload_id").notNull(), // Multipart upload ID from R2
+    r2Key: text("r2_key").notNull(), // Final object key in R2
+    filename: text("filename").notNull(),
+    totalSize: bigint("total_size", { mode: "number" }).notNull(), // Total file size in bytes
+    chunkSize: integer("chunk_size").notNull(), // Chunk size for this upload
+    totalChunks: integer("total_chunks").notNull(),
+    uploadedChunks: integer("uploaded_chunks").notNull().default(0),
+    bytesUploaded: bigint("bytes_uploaded", { mode: "number" })
+      .notNull()
+      .default(0),
+    status: text("status").notNull().default("created"), // created/uploading/completing/completed/failed/cancelled
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    expiresAt: timestamp("expires_at").notNull(), // Auto-cleanup for abandoned uploads
+    errorMessage: text("error_message"),
+    metadata: jsonb("metadata"), // Custom metadata (content-type, etc.)
+  },
+  (table) => [
+    index("idx_upload_sessions_status").on(table.status),
+    index("idx_upload_sessions_expires").on(table.expiresAt),
+  ],
+);
+
+/**
+ * Individual chunk tracking for multipart uploads
+ * Enables resume and retry at chunk level
+ */
+export const uploadChunks = pgTable(
+  "upload_chunks",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => uploadSessions.id, { onDelete: "cascade" }),
+    chunkNumber: integer("chunk_number").notNull(), // 1-indexed (R2 part numbers)
+    size: integer("size").notNull(),
+    byteStart: bigint("byte_start", { mode: "number" }).notNull(), // Start offset in original file
+    byteEnd: bigint("byte_end", { mode: "number" }).notNull(), // End offset (exclusive)
+    status: text("status").notNull().default("pending"), // pending/uploading/completed/failed
+    etag: text("etag"), // ETag from R2 after successful upload
+    checksum: text("checksum"), // Client-computed checksum for validation
+    attempts: integer("attempts").notNull().default(0),
+    lastAttemptAt: timestamp("last_attempt_at"),
+    errorMessage: text("error_message"),
+  },
+  (table) => [
+    uniqueIndex("idx_upload_chunks_session_number").on(
+      table.sessionId,
+      table.chunkNumber,
+    ),
+    index("idx_upload_chunks_session_status").on(table.sessionId, table.status),
+  ],
+);
+
+// ============================================================================
+// Relations (for Drizzle query API)
+// ============================================================================
+
+export const filesRelations = relations(files, ({ many, one }) => ({
+  logRecords: many(logRecords),
+  batchProgress: many(batchProgress),
+  uploadSession: one(uploadSessions, {
+    fields: [files.id],
+    references: [uploadSessions.fileId],
+  }),
+}));
+
+export const logRecordsRelations = relations(logRecords, ({ one }) => ({
+  file: one(files, {
+    fields: [logRecords.fileId],
+    references: [files.id],
+  }),
+}));
+
+export const batchProgressRelations = relations(batchProgress, ({ one }) => ({
+  file: one(files, {
+    fields: [batchProgress.fileId],
+    references: [files.id],
+  }),
+}));
+
+export const uploadSessionsRelations = relations(
+  uploadSessions,
+  ({ one, many }) => ({
+    file: one(files, {
+      fields: [uploadSessions.fileId],
+      references: [files.id],
+    }),
+    chunks: many(uploadChunks),
+  }),
+);
+
+export const uploadChunksRelations = relations(uploadChunks, ({ one }) => ({
+  session: one(uploadSessions, {
+    fields: [uploadChunks.sessionId],
+    references: [uploadSessions.id],
+  }),
+}));
+
+// ============================================================================
+// Type Exports
+// ============================================================================
+
 export type File = typeof files.$inferSelect;
 export type NewFile = typeof files.$inferInsert;
 export type LogRecord = typeof logRecords.$inferSelect;
 export type NewLogRecord = typeof logRecords.$inferInsert;
 export type BatchProgress = typeof batchProgress.$inferSelect;
 export type NewBatchProgress = typeof batchProgress.$inferInsert;
+
+// Upload table types
+export type UploadSession = typeof uploadSessions.$inferSelect;
+export type NewUploadSession = typeof uploadSessions.$inferInsert;
+export type UploadChunk = typeof uploadChunks.$inferSelect;
+export type NewUploadChunk = typeof uploadChunks.$inferInsert;

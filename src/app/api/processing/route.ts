@@ -1,22 +1,9 @@
 import { desc, inArray, sql } from "drizzle-orm";
-import { getRun } from "workflow/api";
 import { handleError, success } from "@/lib/api";
 import { db, files, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
 
 const logger = new Logger("api/processing");
-
-async function getWorkflowStatus(runId: string | null) {
-  if (!runId) return { status: "unknown" };
-  try {
-    const run = getRun(runId);
-    const status = await run.status;
-    return { status: status };
-  } catch (error) {
-    logger.warn("Failed to get workflow status", { runId, error });
-    return { status: "unknown", error: String(error) };
-  }
-}
 
 export async function GET() {
   try {
@@ -38,6 +25,7 @@ export async function GET() {
         .orderBy(files.uploadedAt),
     ]);
 
+    // Get progress counts for processing jobs
     const processingJobIds = activeJobs
       .filter((job) => job.processingStatus === "processing")
       .map((job) => job.id);
@@ -59,37 +47,9 @@ export async function GET() {
       );
     }
 
-    const workflowStatuses = await Promise.all(
-      activeJobs.map(async (job) => {
-        const workflowInfo = await getWorkflowStatus(job.workflowRunId);
-        return { id: job.id, ...workflowInfo };
-      }),
-    );
-
-    const workflowStatusMap = Object.fromEntries(
-      workflowStatuses.map((ws) => [ws.id, ws]),
-    );
-
     const activeJobsWithProgress = activeJobs.map((job) => ({
       ...job,
       currentRecordCount: progressMap[job.id] ?? 0,
-      workflowStatus: workflowStatusMap[job.id]?.status ?? "unknown",
-    }));
-
-    const recentJobWorkflowStatuses = await Promise.all(
-      recentJobs.map(async (job) => {
-        const workflowInfo = await getWorkflowStatus(job.workflowRunId);
-        return { id: job.id, ...workflowInfo };
-      }),
-    );
-
-    const recentWorkflowStatusMap = Object.fromEntries(
-      recentJobWorkflowStatuses.map((ws) => [ws.id, ws]),
-    );
-
-    const recentJobsWithStatus = recentJobs.map((job) => ({
-      ...job,
-      workflowStatus: recentWorkflowStatusMap[job.id]?.status ?? "unknown",
     }));
 
     const totalRecords = await db
@@ -106,7 +66,7 @@ export async function GET() {
 
     return success({
       stats: Object.fromEntries(stats.map((s) => [s.status, s.count])),
-      recentJobs: recentJobsWithStatus,
+      recentJobs,
       activeJobs: activeJobsWithProgress,
       totalRecords: totalRecords[0]?.total ?? 0,
     });

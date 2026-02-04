@@ -1,6 +1,6 @@
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Sidebar, SidebarProvider } from "@/components/layout/sidebar";
-import { UploadProvider } from "@/components/sources/upload-provider";
+import { UploadProvider } from "@/components/upload";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

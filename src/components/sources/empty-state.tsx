@@ -2,6 +2,7 @@
 
 import { DatabaseIconSm } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { Upload } from "@/components/upload";
 
 function SourcesIcon() {
   return (
@@ -79,41 +80,38 @@ function SourcesIcon() {
   );
 }
 
-interface EmptyStateProps {
-  onUpload?: () => void;
-}
-
-export function EmptyState({ onUpload }: EmptyStateProps) {
+export function EmptyState() {
   return (
-    <div className="flex flex-1 flex-col items-start justify-center -mt-24">
+    <div className="-mt-24 flex flex-1 flex-col items-start justify-center">
       <div className="flex w-80 flex-col items-start gap-6 self-center">
-        <div className="flex flex-col items-start gap-6 w-full">
+        <div className="flex w-full flex-col items-start gap-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-zinc-800 bg-[radial-gradient(circle,#222_0%,#141414_100%)]">
             <SourcesIcon />
           </div>
 
-          <div className="flex flex-col items-start gap-4 w-full">
+          <div className="flex w-full flex-col items-start gap-4">
             <h2 className="text-2xl font-semibold leading-9 text-[#fafafa]">
               No data sources yet
             </h2>
 
             <p className="text-lg leading-7 text-[#a1a1aa]">
               Upload your first{" "}
-              <span className="text-[#f4f4f5]">.ndjson (upto 500 MB)</span> file
-              to start exploring your data. We&apos;ll parse and validate it
+              <span className="text-[#f4f4f5]">.csv (up to 5 GB)</span> file to
+              start exploring your data. We&apos;ll parse and validate it
               automatically.
             </p>
           </div>
         </div>
 
-        <Button
-          variant="surface"
-          onClick={onUpload}
-          className="rounded-lg px-4 py-2 text-lg leading-7"
-        >
-          <DatabaseIconSm className="h-5 w-5" />
-          Upload sources
-        </Button>
+        <Upload.Trigger>
+          <Button
+            variant="surface"
+            className="rounded-lg px-4 py-2 text-lg leading-7"
+          >
+            <DatabaseIconSm className="h-5 w-5" />
+            Upload sources
+          </Button>
+        </Upload.Trigger>
       </div>
     </div>
   );

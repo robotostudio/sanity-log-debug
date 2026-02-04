@@ -19,8 +19,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatBytes, formatDate } from "@/lib/format";
 import type { SourceDetail } from "./types";
-import { formatBytes, formatDate, formatSourceName } from "./utils";
+import { formatSourceName } from "./utils";
 
 const STATUS_DOT_COLORS: Record<string, string> = {
   processing: "bg-amber-400",

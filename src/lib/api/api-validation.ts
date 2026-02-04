@@ -53,21 +53,6 @@ export const aggregationsQuerySchema = z
   })
   .merge(filtersSchema);
 
-export const presignedUrlSchema = z.object({
-  filename: z
-    .string()
-    .min(1, "Filename is required")
-    .refine((name) => name.endsWith(".ndjson"), {
-      message: "Filename must end with .ndjson",
-    }),
-});
-
-export const uploadConfirmSchema = z.object({
-  key: z.string().min(1, "Key is required"),
-  filename: z.string().optional(),
-  size: z.number().optional(),
-});
-
 export const deleteFileSchema = z.object({
   key: z.string().min(1, "Key is required"),
 });
@@ -75,8 +60,6 @@ export const deleteFileSchema = z.object({
 // Type exports
 export type LogsQuery = z.infer<typeof logsQuerySchema>;
 export type AggregationsQuery = z.infer<typeof aggregationsQuerySchema>;
-export type PresignedUrlInput = z.infer<typeof presignedUrlSchema>;
-export type UploadConfirmInput = z.infer<typeof uploadConfirmSchema>;
 export type DeleteFileInput = z.infer<typeof deleteFileSchema>;
 export type ValidatedFilters = z.infer<typeof filtersSchema>;
 

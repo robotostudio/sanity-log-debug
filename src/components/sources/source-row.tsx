@@ -2,34 +2,14 @@
 
 import Link from "next/link";
 import { AnalyticsNavIcon } from "@/components/icons";
+import { formatBytes, formatDateRange, formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { ProcessingStatus, Source } from "./types";
-import { formatBytes, formatSourceName, getFileName } from "./utils";
+import { formatSourceName, getFileName } from "./utils";
 
 interface SourceRowProps {
   source: Source;
   onDelete?: (key: string) => void;
-}
-
-function formatRelativeTime(dateString: string): string {
-  const now = Date.now();
-  const date = new Date(dateString).getTime();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
-
-function formatDateRange(dateString: string): string {
-  const date = new Date(dateString);
-  const month = date.toLocaleString("en-US", { month: "short" });
-  const day = date.getDate();
-  const endDay = Math.min(day + 7, 30);
-  return `${month} ${day} - ${endDay}`;
 }
 
 const STATUS_DOT_COLORS: Record<string, string> = {

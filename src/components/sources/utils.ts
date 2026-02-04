@@ -1,18 +1,3 @@
-const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;
-const BYTES_PER_UNIT = 1024;
-
-export function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-
-  let unitIndex = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_UNIT));
-  // Clamp unitIndex to valid range
-  unitIndex = Math.min(unitIndex, BYTE_UNITS.length - 1);
-
-  const value = bytes / BYTES_PER_UNIT ** unitIndex;
-
-  return `${value.toFixed(1)} ${BYTE_UNITS[unitIndex]}`;
-}
-
 export function getFileName(key: string): string {
   return key.split("/").pop() ?? key;
 }
@@ -22,8 +7,8 @@ export function getFileName(key: string): string {
  * Strips `.ndjson` extension, replaces separators with spaces, and applies title casing.
  */
 export function formatSourceName(filename: string): string {
-  // Strip .ndjson extension (case-insensitive)
-  let name = filename.replace(/\.ndjson$/i, "");
+  // Strip .ndjson or .csv extension (case-insensitive)
+  let name = filename.replace(/\.(ndjson|csv)$/i, "");
 
   // Replace underscores and hyphens with spaces (but preserve date-like patterns first)
   // e.g. "sanity-logs-2026-01-15" → "sanity logs 2026-01-15"
@@ -59,13 +44,10 @@ export function isValidNdjsonFile(file: File): boolean {
   return file.name.toLowerCase().endsWith(".ndjson");
 }
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+export function isValidCSVFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".csv");
+}
+
+export function isValidUploadFile(file: File): boolean {
+  return isValidNdjsonFile(file) || isValidCSVFile(file);
 }

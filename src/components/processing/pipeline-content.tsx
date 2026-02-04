@@ -20,7 +20,7 @@ import { StateContainer } from "@/components/ui/state-container";
 import { apiFetcher } from "@/lib/api-client";
 import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
-import { formatFileSize, formatRelativeTime } from "@/lib/format";
+import { formatBytes, formatRelativeTime } from "@/lib/format";
 import { processingKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
@@ -217,7 +217,7 @@ function ActiveJobCard({ job }: ActiveJobCardProps) {
             </span>
           </div>
           <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500">
-            <span>{formatFileSize(job.size)}</span>
+            <span>{formatBytes(job.size)}</span>
             <span className="text-zinc-700">·</span>
             <span>Uploaded {formatRelativeTime(job.uploadedAt)}</span>
           </div>
@@ -303,7 +303,7 @@ function JobsTable({ jobs, loading }: JobsTableProps) {
             <span className="truncate text-zinc-200">{job.filename}</span>
           </div>
           <div className="col-span-2 flex items-center justify-end text-zinc-500">
-            {formatFileSize(job.size)}
+            {formatBytes(job.size)}
           </div>
           <div className="col-span-2 flex items-center justify-end tabular-nums text-zinc-300">
             {job.recordCount?.toLocaleString() ?? "—"}

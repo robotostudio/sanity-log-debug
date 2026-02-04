@@ -1,0 +1,12 @@
+"timestamp","traceId","spanId","severityText","severityNumber","body","attributes","resource"
+"2026-01-28T00:01:57.947Z","trace-001","span-001","INFO",9,"{\"duration\":32.088}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
+"invalid-timestamp","trace-002","span-002","INFO",9,"{\"duration\":50.0}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
+"2026-01-28T00:01:58.000Z","trace-003","span-003","WARN",9,"{invalid json}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
+"2026-01-28T00:01:58.100Z","trace-004"
+"2026-01-28T00:01:58.200Z","trace-005","span-005","ERROR",9,"{\"duration\":100.0}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
+
+"2026-01-28T00:01:58.300Z","trace-006","span-006","INFO",9,"{\"duration\":25.0}","{\"sanity\":{\"projectId\":\"测试\"}}","{}"
+"2026-01-28T00:01:58.400Z","trace-007","span-007","INFO","not-a-number","{\"duration\":30.0}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
+"2026-01-28T00:01:58.500Z","trace-008","span-008","INFO",9,"{\"duration\":45.0}","{\"sanity\":{\"projectId\":\"test\"}}","{}","extra-column"
+"2026-01-28T00:01:58.600Z","trace-009","span-009","INFO",9,"{\"duration\":55.0}","not-json","{}"
+"2026-01-28T00:01:58.700Z","trace-010","span-010","INFO",9,"{\"duration\":60.0}","{\"sanity\":{\"projectId\":\"test\"}}","{}"
