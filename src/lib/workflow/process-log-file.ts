@@ -7,9 +7,15 @@ import { deleteFromR2 } from "./steps/delete-from-r2";
 import { markComplete } from "./steps/mark-complete";
 import { markFailed } from "./steps/mark-failed";
 import { markProcessing } from "./steps/mark-processing";
-import { processBatch } from "./steps/process-batch";
+import {
+  processBatch,
+  type ProcessBatchResult,
+} from "./steps/process-batch";
 
 const logger = new Logger("workflow/process-log-file");
+
+// Parallel batch processing configuration
+const MAX_PARALLEL_BATCHES = 4; // Process up to 4 batches concurrently
 
 export interface ProcessLogFileInput {
   fileId: string;
@@ -30,7 +36,7 @@ export async function processLogFile(
 ): Promise<ProcessLogFileResult> {
   const { fileId, fileKey } = input;
 
-  logger.info("Starting workflow", { fileId, fileKey });
+  logger.info("Starting optimized workflow", { fileId, fileKey });
 
   try {
     await markProcessing({ fileId });
@@ -39,31 +45,42 @@ export async function processLogFile(
     let totalFailedRecords = 0;
     let batchesProcessed = 0;
 
-    // Get batch metadata (lightweight - just line ranges, no records)
+    // Get batch metadata (lightweight - just line ranges)
     const { batches } = await countLines({ fileKey });
 
     logger.info("File scanned", {
       fileId,
       totalBatches: batches.length,
+      maxParallel: MAX_PARALLEL_BATCHES,
     });
 
-    // Process each batch - records are read on-demand by processBatch
-    for (const batch of batches) {
-      const result = await processBatch({ fileId, fileKey, batch });
+    // Process batches in parallel with controlled concurrency
+    const results: ProcessBatchResult[] = [];
 
-      if (!result.skipped) {
-        totalRecords += result.recordsInserted;
-        totalFailedRecords += result.parseErrors;
-        batchesProcessed++;
+    for (let i = 0; i < batches.length; i += MAX_PARALLEL_BATCHES) {
+      const batchGroup = batches.slice(i, i + MAX_PARALLEL_BATCHES);
+
+      const groupResults = await Promise.all(
+        batchGroup.map((batch) => processBatch({ fileId, fileKey, batch })),
+      );
+
+      for (const result of groupResults) {
+        results.push(result);
+
+        if (!result.skipped) {
+          totalRecords += result.recordsInserted;
+          totalFailedRecords += result.parseErrors;
+          batchesProcessed++;
+        }
+
+        logger.info("Batch progress", {
+          fileId,
+          batchIndex: result.batchIndex,
+          recordsInserted: result.recordsInserted,
+          parseErrors: result.parseErrors,
+          skipped: result.skipped,
+        });
       }
-
-      logger.info("Batch progress", {
-        fileId,
-        batchIndex: batch.batchIndex,
-        totalRecords,
-        totalFailedRecords,
-        batchesProcessed,
-      });
     }
 
     logger.info("All batches processed", {

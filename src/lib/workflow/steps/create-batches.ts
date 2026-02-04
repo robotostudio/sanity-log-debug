@@ -4,7 +4,9 @@ import { Logger } from "@/lib/logger";
 import { getFileStream } from "@/lib/r2";
 
 const logger = new Logger("workflow/create-batches");
-const BATCH_SIZE = 1000;
+
+// Increased batch size for better throughput - fewer batches = less overhead
+const BATCH_SIZE = 5000;
 const MAX_ERROR_RATE = 0.5; // Abort if >50% of lines fail to parse
 
 export interface ParsedRecord {
@@ -218,43 +220,6 @@ function safeParseRecord(
   }
 }
 
-async function* readLines(
-  stream: ReadableStream<Uint8Array>,
-): AsyncGenerator<string> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {
-        // Yield any remaining content in buffer
-        if (buffer.trim()) {
-          yield buffer.trim();
-        }
-        break;
-      }
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-
-      // Keep the last partial line in the buffer
-      buffer = lines.pop() ?? "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed) {
-          yield trimmed;
-        }
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
-
 // Lightweight metadata for workflow state - no records included
 export interface BatchMetadata {
   batchIndex: number;
@@ -368,28 +333,64 @@ export async function readBatchFromFile(
   logger.info("Reading batch from file", { fileKey, startLine, endLine });
 
   const stream = await getFileStream(fileKey);
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
   const records: ParsedRecord[] = [];
   const parseErrors: ParseError[] = [];
   let lineNumber = 0;
   let totalErrors = 0;
   let totalLines = 0;
   let headers: string[] = [];
+  let buffer = "";
 
-  for await (const line of readLines(stream)) {
-    lineNumber++;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
 
-    // First line is header
-    if (lineNumber === 1) {
-      headers = parseCsvLine(line);
-      continue;
+      if (done) {
+        // Process final line if buffer has content
+        if (buffer.trim()) {
+          lineNumber++;
+          if (lineNumber >= startLine && lineNumber <= endLine) {
+            processLine(buffer.trim());
+          }
+        }
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        lineNumber++;
+
+        // First line is header
+        if (lineNumber === 1) {
+          headers = parseCsvLine(trimmed);
+          continue;
+        }
+
+        // Skip lines before our range
+        if (lineNumber < startLine) continue;
+
+        // Stop after our range - release reader and return early
+        if (lineNumber > endLine) {
+          reader.releaseLock();
+          return { records, parseErrors };
+        }
+
+        processLine(trimmed);
+      }
     }
+  } finally {
+    reader.releaseLock();
+  }
 
-    // Skip lines before our range
-    if (lineNumber < startLine) continue;
-
-    // Stop after our range
-    if (lineNumber > endLine) break;
-
+  function processLine(line: string) {
     totalLines++;
 
     // Parse CSV line into fields
@@ -437,3 +438,136 @@ export async function readBatchFromFile(
 
   return { records, parseErrors };
 }
+
+// ============================================================================
+// Single-Pass Streaming Processing (NEW - Optimized)
+// ============================================================================
+
+export interface StreamBatch {
+  batchIndex: number;
+  records: ParsedRecord[];
+  parseErrors: ParseError[];
+}
+
+/**
+ * Stream the file once and yield batches as they fill up.
+ * This eliminates the O(n²) re-reading problem completely.
+ */
+export async function* streamBatches(
+  fileKey: string,
+): AsyncGenerator<StreamBatch> {
+  logger.info("Starting single-pass streaming", { fileKey });
+
+  const stream = await getFileStream(fileKey);
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+
+  let buffer = "";
+  let headers: string[] = [];
+  let lineNumber = 0;
+  let batchIndex = 0;
+  let currentBatch: ParsedRecord[] = [];
+  let currentErrors: ParseError[] = [];
+  let totalErrors = 0;
+  let totalLines = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        // Process final line if buffer has content
+        if (buffer.trim() && headers.length > 0) {
+          lineNumber++;
+          processLine(buffer.trim());
+        }
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        lineNumber++;
+
+        // First line is header
+        if (lineNumber === 1) {
+          headers = parseCsvLine(trimmed);
+          continue;
+        }
+
+        processLine(trimmed);
+
+        // Yield batch when full
+        if (currentBatch.length >= BATCH_SIZE) {
+          yield {
+            batchIndex,
+            records: currentBatch,
+            parseErrors: currentErrors,
+          };
+          batchIndex++;
+          currentBatch = [];
+          currentErrors = [];
+        }
+      }
+    }
+
+    // Yield final batch if has records
+    if (currentBatch.length > 0) {
+      yield {
+        batchIndex,
+        records: currentBatch,
+        parseErrors: currentErrors,
+      };
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  function processLine(line: string) {
+    totalLines++;
+
+    const fields = parseCsvLine(line);
+    const row: CsvRow = {};
+    for (let i = 0; i < headers.length; i++) {
+      const header = headers[i];
+      const value = fields[i] ?? "";
+      (row as Record<string, string>)[header] = value;
+    }
+
+    const result = safeParseRecord(row, lineNumber);
+
+    if (result.success && result.record) {
+      currentBatch.push(result.record);
+    } else {
+      totalErrors++;
+      currentErrors.push({
+        lineNumber,
+        error: result.error ?? "Unknown error",
+        rawLine: line.length > 200 ? `${line.substring(0, 200)}...` : line,
+      });
+
+      if (totalLines >= 100) {
+        const errorRate = totalErrors / totalLines;
+        if (errorRate > MAX_ERROR_RATE) {
+          throw new Error(
+            `Aborting: error rate ${(errorRate * 100).toFixed(1)}% exceeds threshold`,
+          );
+        }
+      }
+    }
+  }
+
+  logger.info("Streaming complete", {
+    fileKey,
+    totalBatches: batchIndex + 1,
+    totalLines,
+    totalErrors,
+  });
+}
+
+export { BATCH_SIZE };

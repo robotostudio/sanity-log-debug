@@ -10,9 +10,14 @@ import {
   type BatchMetadata,
   type ParsedRecord,
   type ParseError,
+  type StreamBatch,
 } from "./create-batches";
 
 const logger = new Logger("workflow/process-batch");
+
+// Insert in parallel chunks for better throughput
+const DB_INSERT_CHUNK_SIZE = 1000;
+const MAX_PARALLEL_INSERTS = 4;
 
 export interface ProcessBatchResult {
   batchIndex: number;
@@ -95,6 +100,73 @@ function isValidDate(date: Date): boolean {
   return !Number.isNaN(date.getTime());
 }
 
+/**
+ * Insert records in parallel chunks for maximum throughput
+ */
+async function insertRecordsParallel(
+  dbRecords: ReturnType<typeof prepareDbRecords>,
+  batchIndex: number,
+): Promise<void> {
+  if (dbRecords.length === 0) return;
+
+  // Split into chunks
+  const chunks: (typeof dbRecords)[] = [];
+  for (let i = 0; i < dbRecords.length; i += DB_INSERT_CHUNK_SIZE) {
+    chunks.push(dbRecords.slice(i, i + DB_INSERT_CHUNK_SIZE));
+  }
+
+  // Process chunks in parallel groups with controlled concurrency
+  for (let i = 0; i < chunks.length; i += MAX_PARALLEL_INSERTS) {
+    const group = chunks.slice(i, i + MAX_PARALLEL_INSERTS);
+
+    await Promise.all(
+      group.map((chunk, idx) =>
+        withRetry(
+          async () => {
+            await db.insert(logRecords).values(chunk);
+          },
+          `Insert batch ${batchIndex} chunk ${i + idx + 1}/${chunks.length}`,
+        ),
+      ),
+    );
+  }
+}
+
+function prepareDbRecords(fileId: string, validRecords: ParsedRecord[]) {
+  return validRecords.map((record) => ({
+    fileId,
+    timestamp: new Date(record.timestamp),
+    traceId: record.traceId,
+    spanId: record.spanId,
+    severityText: record.severityText,
+    severityNumber: record.severityNumber,
+    duration: record.duration,
+    insertId: record.insertId,
+    method: record.method,
+    referer: record.referer,
+    remoteIp: record.remoteIp,
+    requestSize: record.requestSize,
+    responseSize: record.responseSize,
+    status: record.status,
+    url: record.url,
+    userAgent: record.userAgent,
+    projectId: record.projectId,
+    dataset: record.dataset,
+    domain: record.domain,
+    endpoint: record.endpoint,
+    groqQueryId: record.groqQueryId,
+    apiVersion: record.apiVersion,
+    tags: record.tags,
+    isStudioRequest: record.isStudioRequest,
+    resourceServiceName: record.resourceServiceName,
+    resourceSanityType: record.resourceSanityType,
+    resourceSanityVersion: record.resourceSanityVersion,
+  }));
+}
+
+/**
+ * Process a batch from file - legacy method using line ranges
+ */
 export async function processBatch({
   fileId,
   fileKey,
@@ -119,13 +191,40 @@ export async function processBatch({
     endLine,
   );
 
-  logger.info("Batch records loaded", {
+  return processRecords(fileId, batchIndex, records, parseErrors);
+}
+
+/**
+ * Process a pre-loaded batch of records - optimized for streaming
+ */
+export async function processStreamBatch({
+  fileId,
+  batch,
+}: {
+  fileId: string;
+  batch: StreamBatch;
+}): Promise<ProcessBatchResult> {
+  const { batchIndex, records, parseErrors } = batch;
+
+  logger.info("Processing stream batch", {
     fileId,
     batchIndex,
     recordCount: records.length,
     parseErrors: parseErrors.length,
   });
 
+  return processRecords(fileId, batchIndex, records, parseErrors);
+}
+
+/**
+ * Core record processing logic - shared by both batch methods
+ */
+async function processRecords(
+  fileId: string,
+  batchIndex: number,
+  records: ParsedRecord[],
+  parseErrors: ParseError[],
+): Promise<ProcessBatchResult> {
   // Check if batch already processed (for recovery)
   const shouldSkip = await shouldSkipBatch(fileId, batchIndex);
   if (shouldSkip) {
@@ -174,41 +273,11 @@ export async function processBatch({
     };
   }
 
-  const dbRecords = validRecords.map((record: ParsedRecord) => ({
-    fileId,
-    timestamp: new Date(record.timestamp),
-    traceId: record.traceId,
-    spanId: record.spanId,
-    severityText: record.severityText,
-    severityNumber: record.severityNumber,
-    duration: record.duration,
-    insertId: record.insertId,
-    method: record.method,
-    referer: record.referer,
-    remoteIp: record.remoteIp,
-    requestSize: record.requestSize,
-    responseSize: record.responseSize,
-    status: record.status,
-    url: record.url,
-    userAgent: record.userAgent,
-    projectId: record.projectId,
-    dataset: record.dataset,
-    domain: record.domain,
-    endpoint: record.endpoint,
-    groqQueryId: record.groqQueryId,
-    apiVersion: record.apiVersion,
-    tags: record.tags,
-    isStudioRequest: record.isStudioRequest,
-    resourceServiceName: record.resourceServiceName,
-    resourceSanityType: record.resourceSanityType,
-    resourceSanityVersion: record.resourceSanityVersion,
-  }));
+  const dbRecords = prepareDbRecords(fileId, validRecords);
 
   try {
-    // Insert with retry and idempotency
-    await withRetry(async () => {
-      await db.insert(logRecords).values(dbRecords);
-    }, `Insert batch ${batchIndex}`);
+    // Insert with parallel chunking for speed
+    await insertRecordsParallel(dbRecords, batchIndex);
 
     await markBatchCompleted(fileId, batchIndex, parseErrors.length);
 
