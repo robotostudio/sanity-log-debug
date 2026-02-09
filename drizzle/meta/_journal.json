@@ -15,6 +15,13 @@
       "when": 1770228074067,
       "tag": "0001_perfect_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770681600000,
+      "tag": "0002_user_profiles_and_file_ownership",
+      "breakpoints": true
     }
   ]
 }

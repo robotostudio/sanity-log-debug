@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { Logger } from "@/lib/logger";
+import { requireAuth, Errors, handleError } from "@/lib/api";
+import { getUserFileCount } from "@/lib/auth-helpers";
 
 const logger = new Logger("Upload");
 import {
@@ -44,6 +46,8 @@ const createUploadSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth();
+
     logger.info("POST /api/uploads - Creating new upload session");
     const body = await request.json();
     logger.info(`Request body: filename=${body.filename}, size=${body.size}, contentType=${body.contentType}`);
@@ -64,6 +68,12 @@ export async function POST(request: Request) {
     }
 
     const { filename, size, contentType } = validation.data;
+
+    // Enforce max sources limit
+    const fileCount = await getUserFileCount(user.id);
+    if (fileCount >= user.maxSources) {
+      throw Errors.maxSourcesReached(fileCount, user.maxSources);
+    }
 
     // Calculate chunk configuration
     const chunkSize = calculateChunkSize(size);
@@ -87,6 +97,7 @@ export async function POST(request: Request) {
       filename,
       size,
       processingStatus: "pending",
+      userId: user.id,
     });
 
     // Create upload session
@@ -158,22 +169,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     logger.error("Failed to create upload session:", error);
-    logger.error("Error details:", {
-      name: error instanceof Error ? error.name : "Unknown",
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to create upload session",
-          details: error instanceof Error ? error.message : String(error),
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to create upload session");
   }
 }
 
@@ -183,10 +179,21 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const sessions = await db
-      .select()
-      .from(uploadSessions)
-      .orderBy(uploadSessions.createdAt);
+    const user = await requireAuth();
+    const isAdmin = user.role === "admin";
+
+    const sessions = isAdmin
+      ? await db
+          .select()
+          .from(uploadSessions)
+          .orderBy(uploadSessions.createdAt)
+      : await db
+          .select({ uploadSessions })
+          .from(uploadSessions)
+          .innerJoin(files, eq(uploadSessions.fileId, files.id))
+          .where(eq(files.userId, user.id))
+          .orderBy(uploadSessions.createdAt)
+          .then((rows) => rows.map((r) => r.uploadSessions));
 
     return NextResponse.json({
       success: true,
@@ -194,15 +201,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Failed to list upload sessions:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to list upload sessions",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to list upload sessions");
   }
 }

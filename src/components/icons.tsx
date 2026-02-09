@@ -325,6 +325,32 @@ export function DatabaseIcon(props: IconProps) {
   );
 }
 
+export function AdminNavIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 18 18"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        d="M9 1.5L2.25 4.5V8.25C2.25 12.4125 5.13 16.3275 9 17.25C12.87 16.3275 15.75 12.4125 15.75 8.25V4.5L9 1.5Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 8.25V10.5"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+      <circle cx="9" cy="6.75" r="0.75" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function DatabaseIconSm(props: IconProps) {
   return (
     <svg

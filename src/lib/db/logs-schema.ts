@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   bigint,
   index,
@@ -10,22 +9,29 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { user } from "./auth-schema";
 
-export const files = pgTable("files", {
-  id: text("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  filename: text("filename").notNull(),
-  size: integer("size").notNull(),
-  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
-  processingStatus: text("processing_status").notNull().default("pending"),
-  recordCount: integer("record_count"),
-  processedAt: timestamp("processed_at"),
-  workflowRunId: text("workflow_run_id"),
-  // Error tracking columns
-  errorMessage: text("error_message"),
-  lastErrorAt: timestamp("last_error_at"),
-  failedRecords: integer("failed_records").default(0),
-});
+export const files = pgTable(
+  "files",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull().unique(),
+    filename: text("filename").notNull(),
+    size: integer("size").notNull(),
+    uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+    processingStatus: text("processing_status").notNull().default("pending"),
+    recordCount: integer("record_count"),
+    processedAt: timestamp("processed_at"),
+    workflowRunId: text("workflow_run_id"),
+    // Error tracking columns
+    errorMessage: text("error_message"),
+    lastErrorAt: timestamp("last_error_at"),
+    failedRecords: integer("failed_records").default(0),
+    // Owner
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  },
+  (table) => [index("idx_files_user_id").on(table.userId)],
+);
 
 export const logRecords = pgTable(
   "log_records",
@@ -158,51 +164,6 @@ export const uploadChunks = pgTable(
     index("idx_upload_chunks_session_status").on(table.sessionId, table.status),
   ],
 );
-
-// ============================================================================
-// Relations (for Drizzle query API)
-// ============================================================================
-
-export const filesRelations = relations(files, ({ many, one }) => ({
-  logRecords: many(logRecords),
-  batchProgress: many(batchProgress),
-  uploadSession: one(uploadSessions, {
-    fields: [files.id],
-    references: [uploadSessions.fileId],
-  }),
-}));
-
-export const logRecordsRelations = relations(logRecords, ({ one }) => ({
-  file: one(files, {
-    fields: [logRecords.fileId],
-    references: [files.id],
-  }),
-}));
-
-export const batchProgressRelations = relations(batchProgress, ({ one }) => ({
-  file: one(files, {
-    fields: [batchProgress.fileId],
-    references: [files.id],
-  }),
-}));
-
-export const uploadSessionsRelations = relations(
-  uploadSessions,
-  ({ one, many }) => ({
-    file: one(files, {
-      fields: [uploadSessions.fileId],
-      references: [files.id],
-    }),
-    chunks: many(uploadChunks),
-  }),
-);
-
-export const uploadChunksRelations = relations(uploadChunks, ({ one }) => ({
-  session: one(uploadSessions, {
-    fields: [uploadChunks.sessionId],
-    references: [uploadSessions.id],
-  }),
-}));
 
 // ============================================================================
 // Type Exports

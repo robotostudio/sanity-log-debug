@@ -3,7 +3,9 @@ import type { NextRequest } from "next/server";
 import {
   aggregationsQuerySchema,
   buildFilterConditions,
+  Errors,
   handleError,
+  requireAuth,
   requireFileReady,
   searchParamsToObject,
   success,
@@ -21,9 +23,14 @@ import type {
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth();
     const params = searchParamsToObject(request.nextUrl.searchParams);
     const query = validateSchema(aggregationsQuerySchema, params);
-    const { fileId } = await requireFileReady(query.fileKey);
+    const { file, fileId } = await requireFileReady(query.fileKey);
+
+    if (user.role !== "admin" && file.userId !== user.id) {
+      throw Errors.notFound("File");
+    }
 
     const aggregations = await getSqlAggregations(fileId, query);
     return success(aggregations);

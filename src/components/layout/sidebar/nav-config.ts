@@ -1,4 +1,5 @@
 import {
+  AdminNavIcon,
   AnalyticsNavIcon,
   PipelineNavIcon,
   SourcesNavIcon,
@@ -23,5 +24,14 @@ export const navItems: NavItem[] = [
     label: "Pipeline",
     href: "/pipeline",
     icon: PipelineNavIcon,
+  },
+];
+
+export const adminNavItems: NavItem[] = [
+  {
+    id: "admin",
+    label: "Admin",
+    href: "/admin",
+    icon: AdminNavIcon,
   },
 ];

@@ -20,3 +20,14 @@ export const processingKeys = {
   all: ["processing"] as const,
   stats: () => [...processingKeys.all, "stats"] as const,
 };
+
+export const meKeys = {
+  all: ["me"] as const,
+  profile: () => [...meKeys.all, "profile"] as const,
+};
+
+export const adminKeys = {
+  all: ["admin"] as const,
+  users: () => [...adminKeys.all, "users"] as const,
+  user: (id: string) => [...adminKeys.all, "user", id] as const,
+};
