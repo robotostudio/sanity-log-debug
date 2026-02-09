@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { Logger } from "@/lib/logger";
-
-const logger = new Logger("Upload");
 import {
   uploadSessions,
   uploadChunks,
@@ -11,6 +9,10 @@ import {
   type NewUploadSession,
   type NewUploadChunk,
 } from "@/lib/db/schema";
+import { userProfile } from "@/lib/db/user-profile-schema";
+import { Logger } from "@/lib/logger";
+import { requireAuth, Errors, handleError } from "@/lib/api";
+import { getUserFileCount } from "@/lib/auth-helpers";
 import {
   createMultipartUpload,
   calculateChunkSize,
@@ -18,7 +20,8 @@ import {
   generateChunkRanges,
   getUploadPartPresignedUrl,
 } from "@/lib/r2";
-import { eq } from "drizzle-orm";
+
+const logger = new Logger("Upload");
 
 // ============================================================================
 // Validation Schemas
@@ -44,6 +47,8 @@ const createUploadSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const user = await requireAuth();
+
     logger.info("POST /api/uploads - Creating new upload session");
     const body = await request.json();
     logger.info(`Request body: filename=${body.filename}, size=${body.size}, contentType=${body.contentType}`);
@@ -80,13 +85,26 @@ export async function POST(request: Request) {
     // Set expiry to 24 hours from now
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Create file record (pending status)
-    await db.insert(files).values({
-      id: fileId,
-      key,
-      filename,
-      size,
-      processingStatus: "pending",
+    // Atomic quota check + file insert inside transaction
+    await db.transaction(async (tx) => {
+      // Lock user profile row to prevent concurrent uploads racing past quota
+      await tx.execute(
+        sql`SELECT 1 FROM ${userProfile} WHERE ${userProfile.userId} = ${user.id} FOR UPDATE`
+      );
+
+      const fileCount = await getUserFileCount(user.id);
+      if (fileCount >= user.maxSources) {
+        throw Errors.maxSourcesReached(fileCount, user.maxSources);
+      }
+
+      await tx.insert(files).values({
+        id: fileId,
+        key,
+        filename,
+        size,
+        processingStatus: "pending",
+        userId: user.id,
+      });
     });
 
     // Create upload session
@@ -102,6 +120,7 @@ export async function POST(request: Request) {
       uploadedChunks: 0,
       bytesUploaded: 0,
       status: "created",
+      userId: user.id,
       expiresAt,
       metadata: { contentType },
     };
@@ -158,22 +177,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     logger.error("Failed to create upload session:", error);
-    logger.error("Error details:", {
-      name: error instanceof Error ? error.name : "Unknown",
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to create upload session",
-          details: error instanceof Error ? error.message : String(error),
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to create upload session");
   }
 }
 
@@ -183,10 +187,21 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const sessions = await db
-      .select()
-      .from(uploadSessions)
-      .orderBy(uploadSessions.createdAt);
+    const user = await requireAuth();
+    const isAdmin = user.role === "admin";
+
+    const sessions = isAdmin
+      ? await db
+          .select()
+          .from(uploadSessions)
+          .orderBy(uploadSessions.createdAt)
+      : await db
+          .select({ uploadSessions })
+          .from(uploadSessions)
+          .innerJoin(files, eq(uploadSessions.fileId, files.id))
+          .where(eq(files.userId, user.id))
+          .orderBy(uploadSessions.createdAt)
+          .then((rows) => rows.map((r) => r.uploadSessions));
 
     return NextResponse.json({
       success: true,
@@ -194,15 +209,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Failed to list upload sessions:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to list upload sessions",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to list upload sessions");
   }
 }

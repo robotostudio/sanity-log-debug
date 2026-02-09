@@ -5,6 +5,7 @@ import { uploadSessions, uploadChunks } from "@/lib/db/schema";
 import { getUploadPartPresignedUrl } from "@/lib/r2";
 import { eq, and } from "drizzle-orm";
 import { Logger } from "@/lib/logger";
+import { requireSessionOwner, handleError } from "@/lib/api";
 
 const logger = new Logger("UploadChunk");
 
@@ -44,23 +45,8 @@ export async function GET(
       );
     }
 
-    // Get session
-    const session = await db.query.uploadSessions.findFirst({
-      where: eq(uploadSessions.id, id),
-    });
-
-    if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Upload session not found",
-          },
-        },
-        { status: 404 },
-      );
-    }
+    // Get session (with auth + ownership check)
+    const { session } = await requireSessionOwner(id);
 
     // Check session status
     if (session.status === "completed") {
@@ -165,17 +151,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    logger.error("Failed to get presigned URL:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to get presigned URL",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to get presigned URL");
   }
 }
 
@@ -225,23 +201,8 @@ export async function POST(
     const { etag, checksum } = validation.data;
     logger.info(`Chunk ${chunkNumber} confirm request: etag=${etag?.substring(0, 20) ?? 'none'}, checksum=${checksum ?? 'none'}`);
 
-    // Get session
-    const session = await db.query.uploadSessions.findFirst({
-      where: eq(uploadSessions.id, id),
-    });
-
-    if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Upload session not found",
-          },
-        },
-        { status: 404 },
-      );
-    }
+    // Get session (with auth + ownership check)
+    const { session } = await requireSessionOwner(id);
 
     // Get chunk
     const chunk = await db.query.uploadChunks.findFirst({
@@ -308,17 +269,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    logger.error("Failed to confirm chunk:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to confirm chunk upload",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to confirm chunk upload");
   }
 }
 
@@ -347,6 +298,9 @@ export async function PATCH(
         { status: 400 },
       );
     }
+
+    // Auth + ownership check
+    await requireSessionOwner(id);
 
     const body = await request.json();
     const { errorMessage } = body;
@@ -390,16 +344,6 @@ export async function PATCH(
       },
     });
   } catch (error) {
-    logger.error("Failed to mark chunk as failed:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to update chunk status",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to update chunk status");
   }
 }

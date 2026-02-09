@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { uploadSessions, uploadChunks } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { requireSessionOwner, handleError } from "@/lib/api";
 
 // Poll interval in milliseconds
 const POLL_INTERVAL = 500;
@@ -43,6 +44,13 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> },
 ): Promise<Response> {
   const { sessionId } = await params;
+
+  // Auth + ownership check (one-time at connection)
+  try {
+    await requireSessionOwner(sessionId);
+  } catch (error) {
+    return handleError(error, "Upload session not found");
+  }
 
   // Create a TransformStream for SSE
   const encoder = new TextEncoder();

@@ -6,6 +6,7 @@ import {
   SidebarOpenIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import { UserMenu } from "@/components/auth/user-menu";
 import { SidebarNav } from "./sidebar-nav";
 import { useSidebar } from "./sidebar-provider";
 import { UploadIndicator } from "./upload-indicator";
@@ -60,6 +61,9 @@ export function Sidebar() {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* User menu */}
+      <UserMenu isCollapsed={isCollapsed} />
     </aside>
   );
 }

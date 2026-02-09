@@ -4,6 +4,9 @@ export enum ApiErrorCode {
   FILE_PROCESSING = "FILE_PROCESSING",
   INTERNAL_ERROR = "INTERNAL_ERROR",
   WORKFLOW_ERROR = "WORKFLOW_ERROR",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  MAX_SOURCES_REACHED = "MAX_SOURCES_REACHED",
 }
 
 export class ApiError extends Error {
@@ -45,4 +48,18 @@ export const Errors = {
 
   workflow: (message: string, details?: Record<string, unknown>) =>
     new ApiError(ApiErrorCode.WORKFLOW_ERROR, message, 500, details),
+
+  unauthorized: (message = "Authentication required") =>
+    new ApiError(ApiErrorCode.UNAUTHORIZED, message, 401),
+
+  forbidden: (message = "Access denied") =>
+    new ApiError(ApiErrorCode.FORBIDDEN, message, 403),
+
+  maxSourcesReached: (current: number, max: number) =>
+    new ApiError(
+      ApiErrorCode.MAX_SOURCES_REACHED,
+      `Source limit reached (${current}/${max})`,
+      403,
+      { current, max },
+    ),
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useRef } from "react";
+import { type ReactNode, useCallback, useId, useRef } from "react";
 import { useUploadActions, useUploadMeta } from "./upload-context";
 
 // ============================================================================
@@ -19,19 +19,17 @@ export function UploadTrigger({
   disabled,
 }: UploadTriggerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const { upload } = useUploadActions();
   const { acceptedTypes, isUploading } = useUploadMeta();
-
-  const handleClick = useCallback(() => {
-    inputRef.current?.click();
-  }, []);
+  const isDisabled = disabled || isUploading;
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (file) {
-        await upload(file);
-      }
+      if (!file) return;
+
+      await upload(file);
       // Reset input so same file can be selected again
       if (inputRef.current) {
         inputRef.current.value = "";
@@ -41,18 +39,17 @@ export function UploadTrigger({
   );
 
   return (
-    <>
+    <label htmlFor={isDisabled ? undefined : inputId} className={className}>
       <input
         ref={inputRef}
+        id={inputId}
         type="file"
         accept={acceptedTypes.join(",")}
         onChange={handleFileSelect}
         className="hidden"
-        disabled={disabled || isUploading}
+        disabled={isDisabled}
       />
-      <div onClick={handleClick} className={className}>
-        {children}
-      </div>
-    </>
+      {children}
+    </label>
   );
 }

@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import {
   deleteFileSchema,
+  Errors,
   handleError,
+  requireAuth,
   requireFileExists,
   success,
   validateSchema,
@@ -14,8 +16,12 @@ const logger = new Logger("api/files");
 
 export async function GET() {
   try {
-    logger.info("Listing files");
+    const user = await requireAuth();
+
+    const isAdmin = user.role === "admin";
+
     const dbFiles = await db.query.files.findMany({
+      where: isAdmin ? undefined : eq(files.userId, user.id),
       orderBy: (files, { desc }) => [desc(files.uploadedAt)],
     });
 
@@ -39,12 +45,18 @@ export async function GET() {
 
 export async function DELETE(request: Request) {
   try {
+    const user = await requireAuth();
     const body = await request.json();
     const { key } = validateSchema(deleteFileSchema, body);
 
     logger.info("DELETE request", { key });
 
     const { file: fileRecord } = await requireFileExists(key);
+
+    // Check ownership (admin bypasses)
+    if (user.role !== "admin" && fileRecord.userId !== user.id) {
+      throw Errors.notFound("File");
+    }
 
     logger.info("Deleting log records", { fileId: fileRecord.id });
     await db.delete(logRecords).where(eq(logRecords.fileId, fileRecord.id));

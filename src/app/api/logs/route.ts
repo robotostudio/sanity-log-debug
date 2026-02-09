@@ -2,8 +2,10 @@ import { asc, desc, sql } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import {
   buildFilterConditions,
+  Errors,
   handleError,
   logsQuerySchema,
+  requireAuth,
   requireFileReady,
   searchParamsToObject,
   success,
@@ -14,9 +16,15 @@ import type { LogRecord as DbLogRecord } from "@/lib/db/schema";
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth();
     const params = searchParamsToObject(request.nextUrl.searchParams);
     const query = validateSchema(logsQuerySchema, params);
-    const { fileId } = await requireFileReady(query.fileKey);
+    const { file, fileId } = await requireFileReady(query.fileKey);
+
+    // Ownership check
+    if (user.role !== "admin" && file.userId !== user.id) {
+      throw Errors.notFound("File");
+    }
 
     const whereClause = buildFilterConditions(fileId, query);
 
