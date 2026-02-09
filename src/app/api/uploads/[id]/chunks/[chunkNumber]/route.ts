@@ -286,9 +286,6 @@ export async function PATCH(
     const chunkNumber = Number.parseInt(chunkNumberStr, 10);
     logger.info(`PATCH /api/uploads/${id}/chunks/${chunkNumber} - Marking chunk as failed`);
 
-    // Auth + ownership check
-    await requireSessionOwner(id);
-
     if (Number.isNaN(chunkNumber) || chunkNumber < 1) {
       return NextResponse.json(
         {
@@ -301,6 +298,9 @@ export async function PATCH(
         { status: 400 },
       );
     }
+
+    // Auth + ownership check
+    await requireSessionOwner(id);
 
     const body = await request.json();
     const { errorMessage } = body;
