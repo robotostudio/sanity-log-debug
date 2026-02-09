@@ -165,30 +165,33 @@ function prepareDbRecords(fileId: string, validRecords: ParsedRecord[]) {
 }
 
 /**
- * Process a batch from file - legacy method using line ranges
+ * Process a batch from file using byte range seeking - O(1) file access
  */
 export async function processBatch({
   fileId,
   fileKey,
   batch,
+  headers,
 }: {
   fileId: string;
   fileKey: string;
   batch: BatchMetadata;
+  headers: string[];
 }): Promise<ProcessBatchResult> {
-  const { batchIndex, startLine, endLine } = batch;
+  const { batchIndex, byteStart, byteEnd, lineCount } = batch;
 
   logger.info("Processing batch", {
     fileId,
     batchIndex,
-    lineRange: `${startLine}-${endLine}`,
+    byteRange: `${byteStart}-${byteEnd}`,
+    expectedLines: lineCount,
   });
 
-  // Read records from file for this batch
+  // Read records from file for this batch using byte range - O(1) seek!
   const { records, parseErrors } = await readBatchFromFile(
     fileKey,
-    startLine,
-    endLine,
+    batch,
+    headers,
   );
 
   return processRecords(fileId, batchIndex, records, parseErrors);

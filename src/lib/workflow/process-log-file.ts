@@ -45,23 +45,27 @@ export async function processLogFile(
     let totalFailedRecords = 0;
     let batchesProcessed = 0;
 
-    // Get batch metadata (lightweight - just line ranges)
-    const { batches } = await countLines({ fileKey });
+    // Get batch metadata with byte offsets for O(1) seeking
+    const { batches, headers, headerByteEnd } = await countLines({ fileKey });
 
-    logger.info("File scanned", {
+    logger.info("File scanned with byte offsets", {
       fileId,
       totalBatches: batches.length,
+      headerByteEnd,
       maxParallel: MAX_PARALLEL_BATCHES,
     });
 
     // Process batches in parallel with controlled concurrency
+    // Each batch uses Range header to seek directly - no re-reading!
     const results: ProcessBatchResult[] = [];
 
     for (let i = 0; i < batches.length; i += MAX_PARALLEL_BATCHES) {
       const batchGroup = batches.slice(i, i + MAX_PARALLEL_BATCHES);
 
       const groupResults = await Promise.all(
-        batchGroup.map((batch) => processBatch({ fileId, fileKey, batch })),
+        batchGroup.map((batch) =>
+          processBatch({ fileId, fileKey, batch, headers }),
+        ),
       );
 
       for (const result of groupResults) {
