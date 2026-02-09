@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { uploadSessions, uploadChunks, files } from "@/lib/db/schema";
 import { abortMultipartUpload } from "@/lib/r2";
 import { eq, and } from "drizzle-orm";
+import { requireSessionOwner, handleError } from "@/lib/api";
 
 // ============================================================================
 // GET /api/uploads/:id - Get upload session status
@@ -14,23 +15,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-
-    const session = await db.query.uploadSessions.findFirst({
-      where: eq(uploadSessions.id, id),
-    });
-
-    if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Upload session not found",
-          },
-        },
-        { status: 404 },
-      );
-    }
+    const { session } = await requireSessionOwner(id);
 
     // Get chunk statuses
     const chunks = await db
@@ -88,17 +73,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Failed to get upload session:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to get upload session",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to get upload session");
   }
 }
 
@@ -112,23 +87,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-
-    const session = await db.query.uploadSessions.findFirst({
-      where: eq(uploadSessions.id, id),
-    });
-
-    if (!session) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Upload session not found",
-          },
-        },
-        { status: 404 },
-      );
-    }
+    const { session } = await requireSessionOwner(id);
 
     // Can only cancel sessions that are not completed
     if (session.status === "completed") {
@@ -180,16 +139,6 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error("Failed to cancel upload session:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to cancel upload session",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to cancel upload session");
   }
 }

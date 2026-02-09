@@ -29,4 +29,4 @@ export {
   type ValidatedFilters,
   validateSchema,
 } from "./api-validation";
-export { requireAuth, requireAdmin } from "./require-auth";
+export { requireAuth, requireAdmin, requireSessionOwner } from "./require-auth";

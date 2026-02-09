@@ -1,9 +1,12 @@
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import {
   getOrCreateUserProfile,
   type UserWithProfile,
 } from "@/lib/auth-helpers";
+import { db } from "@/lib/db";
+import { uploadSessions, files } from "@/lib/db/schema";
 import { Errors } from "./api-errors";
 
 /**
@@ -34,4 +37,30 @@ export async function requireAdmin(): Promise<UserWithProfile> {
   }
 
   return user;
+}
+
+/**
+ * Require authenticated user who owns the upload session.
+ * Ownership is verified via the linked file's userId.
+ * Admins bypass ownership check. Returns 404 (not 403) for unauthorized access.
+ */
+export async function requireSessionOwner(sessionId: string) {
+  const user = await requireAuth();
+
+  const session = await db.query.uploadSessions.findFirst({
+    where: eq(uploadSessions.id, sessionId),
+  });
+  if (!session) throw Errors.notFound("Upload session");
+
+  if (session.fileId) {
+    const file = await db.query.files.findFirst({
+      where: eq(files.id, session.fileId),
+      columns: { userId: true },
+    });
+    if (user.role !== "admin" && file?.userId !== user.id) {
+      throw Errors.notFound("Upload session");
+    }
+  }
+
+  return { user, session };
 }

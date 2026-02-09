@@ -10,6 +10,7 @@ import {
 import { completeMultipartUpload, listUploadedParts, type CompletedPart } from "@/lib/r2";
 import { Logger } from "@/lib/logger";
 import { processLogFile } from "@/lib/workflow";
+import { requireSessionOwner, handleError } from "@/lib/api";
 
 const logger = new Logger("UploadComplete");
 
@@ -25,24 +26,8 @@ export async function POST(
     const { id } = await params;
     logger.info(`POST /api/uploads/${id}/complete - Starting completion`);
 
-    // Get session
-    const session = await db.query.uploadSessions.findFirst({
-      where: eq(uploadSessions.id, id),
-    });
-
-    if (!session) {
-      logger.error(`Session ${id} not found`);
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "NOT_FOUND",
-            message: "Upload session not found",
-          },
-        },
-        { status: 404 },
-      );
-    }
+    // Get session (with auth + ownership check)
+    const { session } = await requireSessionOwner(id);
 
     logger.info(`Session found: status=${session.status}, totalChunks=${session.totalChunks}, r2Key=${session.r2Key}`);
 
@@ -252,16 +237,6 @@ export async function POST(
       },
     });
   } catch (error) {
-    logger.error("Failed to complete upload:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "INTERNAL_ERROR",
-          message: "Failed to complete upload",
-        },
-      },
-      { status: 500 },
-    );
+    return handleError(error, "Failed to complete upload");
   }
 }
