@@ -6,7 +6,7 @@
 
 **Architecture:** Protected layout pattern — no middleware. Route groups enforce complete isolation at the file-system level:
 
-```
+```text
 src/app/
   layout.tsx                          # Root: fonts, QueryProvider, AuthProvider, Toaster (shared)
   page.tsx                            # Server redirect / → /analytics (auth-aware)

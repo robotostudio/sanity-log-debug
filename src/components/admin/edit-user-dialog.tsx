@@ -31,6 +31,7 @@ interface EditUserDialogProps {
 export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
   const [role, setRole] = useState<"user" | "admin">("user");
   const [maxSources, setMaxSources] = useState("1");
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -40,9 +41,12 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
     }
   }, [user]);
 
+  const userId = user?.id;
+
   const mutation = useMutation({
     mutationFn: async (data: { role: string; maxSources: number }) => {
-      const res = await fetch(`/api/admin/users/${user!.id}`, {
+      if (!userId) throw new Error("No user selected");
+      const res = await fetch(`/api/admin/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -59,7 +63,11 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseInt(maxSources, 10);
-    if (isNaN(parsed) || parsed < 1) return;
+    if (isNaN(parsed) || parsed < 1 || parsed > 100) {
+      setError("Max sources must be between 1 and 100");
+      return;
+    }
+    setError(null);
     mutation.mutate({ role, maxSources: parsed });
   };
 
@@ -95,6 +103,9 @@ export function EditUserDialog({ user, onClose }: EditUserDialogProps) {
               value={maxSources}
               onChange={(e) => setMaxSources(e.target.value)}
             />
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>

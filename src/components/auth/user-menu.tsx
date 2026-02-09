@@ -2,6 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
@@ -12,9 +13,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function getInitials(name: string | null | undefined): string {
-  if (!name) return "U";
+  if (!name?.trim()) return "U";
   return name
-    .split(" ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
     .map((part) => part[0])
     .join("")
     .toUpperCase()
@@ -30,8 +33,13 @@ export function UserMenu({ isCollapsed }: { isCollapsed: boolean }) {
   const { user } = session;
 
   async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/login");
+    try {
+      await authClient.signOut();
+      router.push("/login");
+    } catch (error) {
+      console.error("Sign out failed:", error);
+      toast.error("Failed to sign out. Please try again.");
+    }
   }
 
   return (

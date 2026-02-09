@@ -1,6 +1,7 @@
 import { eq, and } from "drizzle-orm";
 import {
   deleteFileSchema,
+  Errors,
   handleError,
   requireAuth,
   requireFileExists,
@@ -54,10 +55,7 @@ export async function DELETE(request: Request) {
 
     // Check ownership (admin bypasses)
     if (user.role !== "admin" && fileRecord.userId !== user.id) {
-      return handleError(
-        new Error("Not found"),
-        "File not found",
-      );
+      throw Errors.notFound("File");
     }
 
     logger.info("Deleting log records", { fileId: fileRecord.id });

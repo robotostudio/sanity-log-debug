@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Table,
   TableBody,
@@ -39,14 +40,16 @@ export function AdminUsersTable({ users }: AdminUsersTableProps) {
               <TableCell>
                 <div className="flex items-center gap-3">
                   {user.image ? (
-                    <img
+                    <Image
                       src={user.image}
                       alt={user.name}
+                      width={32}
+                      height={32}
                       className="size-8 rounded-full"
                     />
                   ) : (
                     <div className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-xs font-medium text-zinc-300">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.name?.trim()?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "?"}
                     </div>
                   )}
                   <div>

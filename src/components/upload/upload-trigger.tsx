@@ -23,8 +23,9 @@ export function UploadTrigger({
   const { acceptedTypes, isUploading } = useUploadMeta();
 
   const handleClick = useCallback(() => {
+    if (disabled || isUploading) return;
     inputRef.current?.click();
-  }, []);
+  }, [disabled, isUploading]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {

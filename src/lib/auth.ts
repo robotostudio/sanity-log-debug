@@ -19,6 +19,7 @@ export const auth = betterAuth({
       maxAge: 5 * 60, // 5 min — reduces DB lookups for repeated requests
     },
   },
+  trustedOrigins: [env.BETTER_AUTH_URL, "http://localhost:3000"].filter(Boolean),
 });
 
 export type Session = typeof auth.$Infer.Session;

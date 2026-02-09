@@ -13,6 +13,7 @@ import {
   type NewUploadSession,
   type NewUploadChunk,
 } from "@/lib/db/schema";
+import { userProfile } from "@/lib/db/user-profile-schema";
 import {
   createMultipartUpload,
   calculateChunkSize,
@@ -20,7 +21,7 @@ import {
   generateChunkRanges,
   getUploadPartPresignedUrl,
 } from "@/lib/r2";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // ============================================================================
 // Validation Schemas
@@ -69,12 +70,6 @@ export async function POST(request: Request) {
 
     const { filename, size, contentType } = validation.data;
 
-    // Enforce max sources limit
-    const fileCount = await getUserFileCount(user.id);
-    if (fileCount >= user.maxSources) {
-      throw Errors.maxSourcesReached(fileCount, user.maxSources);
-    }
-
     // Calculate chunk configuration
     const chunkSize = calculateChunkSize(size);
     const totalChunks = calculateTotalChunks(size, chunkSize);
@@ -90,14 +85,26 @@ export async function POST(request: Request) {
     // Set expiry to 24 hours from now
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Create file record (pending status)
-    await db.insert(files).values({
-      id: fileId,
-      key,
-      filename,
-      size,
-      processingStatus: "pending",
-      userId: user.id,
+    // Atomic quota check + file insert inside transaction
+    await db.transaction(async (tx) => {
+      // Lock user profile row to prevent concurrent uploads racing past quota
+      await tx.execute(
+        sql`SELECT 1 FROM ${userProfile} WHERE ${userProfile.userId} = ${user.id} FOR UPDATE`
+      );
+
+      const fileCount = await getUserFileCount(user.id);
+      if (fileCount >= user.maxSources) {
+        throw Errors.maxSourcesReached(fileCount, user.maxSources);
+      }
+
+      await tx.insert(files).values({
+        id: fileId,
+        key,
+        filename,
+        size,
+        processingStatus: "pending",
+        userId: user.id,
+      });
     });
 
     // Create upload session
@@ -113,6 +120,7 @@ export async function POST(request: Request) {
       uploadedChunks: 0,
       bytesUploaded: 0,
       status: "created",
+      userId: user.id,
       expiresAt,
       metadata: { contentType },
     };

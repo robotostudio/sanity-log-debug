@@ -17,7 +17,7 @@ export const files = pgTable(
     id: text("id").primaryKey(),
     key: text("key").notNull().unique(),
     filename: text("filename").notNull(),
-    size: integer("size").notNull(),
+    size: bigint("size", { mode: "number" }).notNull(),
     uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
     processingStatus: text("processing_status").notNull().default("pending"),
     recordCount: integer("record_count"),
@@ -126,11 +126,13 @@ export const uploadSessions = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     expiresAt: timestamp("expires_at").notNull(), // Auto-cleanup for abandoned uploads
     errorMessage: text("error_message"),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
     metadata: jsonb("metadata"), // Custom metadata (content-type, etc.)
   },
   (table) => [
     index("idx_upload_sessions_status").on(table.status),
     index("idx_upload_sessions_expires").on(table.expiresAt),
+    index("idx_upload_sessions_user_id").on(table.userId),
   ],
 );
 

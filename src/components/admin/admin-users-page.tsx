@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { adminKeys } from "@/lib/query-keys";
 import { AdminUsersTable } from "./admin-users-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 export interface AdminUser {
   id: string;
@@ -25,7 +26,7 @@ async function fetchUsers(): Promise<AdminUser[]> {
 }
 
 export function AdminUsersPage() {
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: adminKeys.users(),
     queryFn: fetchUsers,
   });
@@ -38,6 +39,13 @@ export function AdminUsersPage() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center gap-4 py-12 text-center">
+          <p className="text-sm text-destructive">Failed to load users.</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            Retry
+          </Button>
         </div>
       ) : (
         <AdminUsersTable users={users ?? []} />

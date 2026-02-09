@@ -4,6 +4,7 @@ import { handleError, requireAdmin, success, Errors } from "@/lib/api";
 import { db } from "@/lib/db";
 import { userProfile } from "@/lib/db/user-profile-schema";
 import { getOrCreateUserProfile } from "@/lib/auth-helpers";
+import { user } from "@/lib/db/auth-schema";
 
 const updateUserSchema = z.object({
   role: z.enum(["user", "admin"]).optional(),
@@ -17,6 +18,16 @@ export async function PATCH(
   try {
     await requireAdmin();
     const { id: targetUserId } = await params;
+
+    // Verify target user exists
+    const targetUser = await db.query.user.findFirst({
+      where: eq(user.id, targetUserId),
+      columns: { id: true },
+    });
+    if (!targetUser) {
+      throw Errors.notFound("User");
+    }
+
     const body = await request.json();
 
     const validation = updateUserSchema.safeParse(body);

@@ -23,7 +23,7 @@ export function SourcesPage() {
           {fileCount}/{maxSources} sources
         </span>
       )}
-      <Upload.Trigger>
+      <Upload.Trigger disabled={atLimit}>
         <Button
           variant="surface"
           className="rounded-lg px-3 py-2 text-base leading-5"

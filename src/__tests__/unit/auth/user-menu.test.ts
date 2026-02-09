@@ -22,4 +22,8 @@ describe("getInitials", () => {
   it("returns 'U' for empty string", () => {
     expect(getInitials("")).toBe("U");
   });
+
+  it("handles extra whitespace correctly", () => {
+    expect(getInitials("  John  Doe  ")).toBe("JD");
+  });
 });

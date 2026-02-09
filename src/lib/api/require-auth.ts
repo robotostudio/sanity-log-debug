@@ -55,16 +55,23 @@ export async function requireSessionOwner(sessionId: string): Promise<{
   });
   if (!session) throw Errors.notFound("Upload session");
 
-  if (!session.fileId) {
-    if (user.role !== "admin") throw Errors.notFound("Upload session");
+  // Admin bypass
+  if (user.role === "admin") return { user, session };
+
+  // Check userId directly on session (new sessions have it set)
+  if (session.userId) {
+    if (session.userId !== user.id) throw Errors.notFound("Upload session");
     return { user, session };
   }
+
+  // Fallback: check via linked file for older sessions without userId
+  if (!session.fileId) throw Errors.notFound("Upload session");
 
   const file = await db.query.files.findFirst({
     where: eq(files.id, session.fileId),
     columns: { userId: true },
   });
-  if (user.role !== "admin" && file?.userId !== user.id) {
+  if (file?.userId !== user.id) {
     throw Errors.notFound("Upload session");
   }
 
