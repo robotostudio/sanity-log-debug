@@ -25,31 +25,43 @@ async function fetchUsers(): Promise<AdminUser[]> {
   return json.data.users;
 }
 
+function UsersLoadingSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
+}
+
 export function AdminUsersPage() {
   const { data: users, isLoading, error, refetch } = useQuery({
     queryKey: adminKeys.users(),
     queryFn: fetchUsers,
   });
 
-  return (
-    <div className="flex flex-1 flex-col gap-8">
-      <PageHeader title="Users" />
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ) : error ? (
+  const renderContent = () => {
+    if (isLoading) return <UsersLoadingSkeleton />;
+
+    if (error) {
+      return (
         <div className="flex flex-col items-center gap-4 py-12 text-center">
           <p className="text-sm text-destructive">Failed to load users.</p>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             Retry
           </Button>
         </div>
-      ) : (
-        <AdminUsersTable users={users ?? []} />
-      )}
+      );
+    }
+
+    return <AdminUsersTable users={users ?? []} />;
+  };
+
+  return (
+    <div className="flex flex-1 flex-col gap-8">
+      <PageHeader title="Users" />
+      {renderContent()}
     </div>
   );
 }

@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { Logger } from "@/lib/logger";
-import { requireAuth, Errors, handleError } from "@/lib/api";
-import { getUserFileCount } from "@/lib/auth-helpers";
-
-const logger = new Logger("Upload");
 import {
   uploadSessions,
   uploadChunks,
@@ -14,6 +10,9 @@ import {
   type NewUploadChunk,
 } from "@/lib/db/schema";
 import { userProfile } from "@/lib/db/user-profile-schema";
+import { Logger } from "@/lib/logger";
+import { requireAuth, Errors, handleError } from "@/lib/api";
+import { getUserFileCount } from "@/lib/auth-helpers";
 import {
   createMultipartUpload,
   calculateChunkSize,
@@ -21,7 +20,8 @@ import {
   generateChunkRanges,
   getUploadPartPresignedUrl,
 } from "@/lib/r2";
-import { eq, sql } from "drizzle-orm";
+
+const logger = new Logger("Upload");
 
 // ============================================================================
 // Validation Schemas
