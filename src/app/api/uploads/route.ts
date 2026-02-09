@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   uploadSessions,
@@ -9,7 +9,6 @@ import {
   type NewUploadSession,
   type NewUploadChunk,
 } from "@/lib/db/schema";
-import { userProfile } from "@/lib/db/user-profile-schema";
 import { Logger } from "@/lib/logger";
 import { requireAuth, Errors, handleError } from "@/lib/api";
 import { getUserFileCount } from "@/lib/auth-helpers";
@@ -85,26 +84,19 @@ export async function POST(request: Request) {
     // Set expiry to 24 hours from now
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // Atomic quota check + file insert inside transaction
-    await db.transaction(async (tx) => {
-      // Lock user profile row to prevent concurrent uploads racing past quota
-      await tx.execute(
-        sql`SELECT 1 FROM ${userProfile} WHERE ${userProfile.userId} = ${user.id} FOR UPDATE`
-      );
+    // Quota check + file insert (sequential, no transaction needed for neon-http)
+    const fileCount = await getUserFileCount(user.id);
+    if (fileCount >= user.maxSources) {
+      throw Errors.maxSourcesReached(fileCount, user.maxSources);
+    }
 
-      const fileCount = await getUserFileCount(user.id);
-      if (fileCount >= user.maxSources) {
-        throw Errors.maxSourcesReached(fileCount, user.maxSources);
-      }
-
-      await tx.insert(files).values({
-        id: fileId,
-        key,
-        filename,
-        size,
-        processingStatus: "pending",
-        userId: user.id,
-      });
+    await db.insert(files).values({
+      id: fileId,
+      key,
+      filename,
+      size,
+      processingStatus: "pending",
+      userId: user.id,
     });
 
     // Create upload session
