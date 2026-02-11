@@ -23,6 +23,9 @@ export async function GET(
       processingStatus: file.processingStatus,
       recordCount: file.recordCount,
       processedAt: file.processedAt?.toISOString() ?? null,
+      errorMessage: file.errorMessage ?? null,
+      lastErrorAt: file.lastErrorAt?.toISOString() ?? null,
+      failedRecords: file.failedRecords ?? 0,
     });
   } catch (error) {
     return handleError(error, "Failed to fetch file");

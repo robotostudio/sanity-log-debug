@@ -62,7 +62,7 @@ function LogsTabContent() {
 
 export function SourceDetailPage({ params }: SourceDetailPageProps) {
   const { id } = use(params);
-  const { source, isLoading, error, isDeleting, deleteSource } =
+  const { source, isLoading, error, isDeleting, deleteSource, isRetrying, retrySource } =
     useSourceDetail(id);
 
   if (isLoading) {
@@ -88,6 +88,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
   }
 
   const isReady = source.processingStatus === "ready";
+  const isFailed = source.processingStatus === "failed" || source.processingStatus === "error";
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -95,6 +96,8 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
         source={source}
         onDelete={deleteSource}
         isDeleting={isDeleting}
+        onRetry={retrySource}
+        isRetrying={isRetrying}
       />
 
       {isReady ? (
@@ -117,6 +120,14 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
             </TabsContent>
           </Tabs>
         </FileKeyProvider>
+      ) : isFailed ? (
+        <StateContainer
+          variant="card"
+          icon={<AlertCircle className="h-6 w-6 text-red-400" />}
+          iconBg="bg-red-500/10"
+          title="Processing failed"
+          description={source.errorMessage ?? "An error occurred during processing. You can retry from the menu above."}
+        />
       ) : (
         <StateContainer
           variant="card"

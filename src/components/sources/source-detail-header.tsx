@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import { AlertCircle, ChevronRight, Loader2, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -62,12 +62,16 @@ interface SourceDetailHeaderProps {
   source: SourceDetail;
   onDelete: () => void;
   isDeleting: boolean;
+  onRetry?: () => void;
+  isRetrying?: boolean;
 }
 
 export function SourceDetailHeader({
   source,
   onDelete,
   isDeleting,
+  onRetry,
+  isRetrying,
 }: SourceDetailHeaderProps) {
   const displayName = formatSourceName(source.filename);
   const statusKey =
@@ -101,6 +105,17 @@ export function SourceDetailHeader({
               {STATUS_LABELS[statusKey]}
             </span>
           </div>
+          {source.processingStatus === "failed" && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={isRetrying}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 px-3 py-1 text-sm text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              {isRetrying ? "Retrying..." : "Retry"}
+            </button>
+          )}
         </div>
 
         <AlertDialog>
@@ -119,6 +134,12 @@ export function SourceDetailHeader({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {source.processingStatus === "failed" && onRetry && (
+                <DropdownMenuItem onClick={onRetry} disabled={isRetrying}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Retry Processing
+                </DropdownMenuItem>
+              )}
               <AlertDialogTrigger asChild>
                 <DropdownMenuItem className="text-red-400 focus:text-red-400">
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -166,6 +187,13 @@ export function SourceDetailHeader({
         </MetadataItem>
         <MetadataItem label="Size">{formatBytes(source.size)}</MetadataItem>
       </div>
+
+      {source.errorMessage && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+          <p className="text-sm text-red-300">{source.errorMessage}</p>
+        </div>
+      )}
     </div>
   );
 }

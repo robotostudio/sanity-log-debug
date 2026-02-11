@@ -4,6 +4,7 @@ import {
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
@@ -109,6 +110,33 @@ export async function deleteFile(key: string): Promise<void> {
   });
 
   await r2Client.send(command);
+}
+
+/**
+ * Check if a file exists in R2 using a HEAD request.
+ * Returns false on 404/NotFound, throws on other errors.
+ */
+export async function fileExistsInR2(key: string): Promise<boolean> {
+  try {
+    await r2Client.send(
+      new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: key }),
+    );
+    return true;
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      ("name" in error && (error.name === "NotFound" || error.name === "NoSuchKey"))
+    ) {
+      return false;
+    }
+    // Also check $metadata for 404 status code (AWS SDK v3 pattern)
+    const metadata = (error as { $metadata?: { httpStatusCode?: number } })
+      ?.$metadata;
+    if (metadata?.httpStatusCode === 404) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 // ============================================================================

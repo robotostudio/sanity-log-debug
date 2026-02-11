@@ -24,6 +24,9 @@ export interface SourceDetail {
   processingStatus: ProcessingStatus;
   recordCount: number | null;
   processedAt: string | null;
+  errorMessage: string | null;
+  lastErrorAt: string | null;
+  failedRecords: number;
 }
 
 export interface UploadProgress {

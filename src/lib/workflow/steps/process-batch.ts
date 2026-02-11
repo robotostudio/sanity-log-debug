@@ -1,10 +1,11 @@
 "use step";
 
+import pMap from "p-map";
+import pRetry from "p-retry";
 import { and, eq } from "drizzle-orm";
 
 import { batchProgress, db, logRecords } from "@/lib/db";
 import { Logger } from "@/lib/logger";
-import { withRetry } from "../utils/retry";
 import {
   readBatchFromFile,
   type BatchMetadata,
@@ -15,9 +16,9 @@ import {
 
 const logger = new Logger("workflow/process-batch");
 
-// Insert in parallel chunks for better throughput
-const DB_INSERT_CHUNK_SIZE = 1000;
-const MAX_PARALLEL_INSERTS = 4;
+// 200 rows x 27 columns = 5,400 params (Neon limit ~32,767)
+const DB_INSERT_CHUNK_SIZE = 200;
+const MAX_PARALLEL_INSERTS = 2;
 
 export interface ProcessBatchResult {
   batchIndex: number;
@@ -100,8 +101,15 @@ function isValidDate(date: Date): boolean {
   return !Number.isNaN(date.getTime());
 }
 
+/** Split array into chunks of `size` */
+function chunk<T>(arr: T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size),
+  );
+}
+
 /**
- * Insert records in parallel chunks for maximum throughput
+ * Insert records with p-map (concurrency) + p-retry (exponential backoff)
  */
 async function insertRecordsParallel(
   dbRecords: ReturnType<typeof prepareDbRecords>,
@@ -109,27 +117,26 @@ async function insertRecordsParallel(
 ): Promise<void> {
   if (dbRecords.length === 0) return;
 
-  // Split into chunks
-  const chunks: (typeof dbRecords)[] = [];
-  for (let i = 0; i < dbRecords.length; i += DB_INSERT_CHUNK_SIZE) {
-    chunks.push(dbRecords.slice(i, i + DB_INSERT_CHUNK_SIZE));
-  }
+  const chunks = chunk(dbRecords, DB_INSERT_CHUNK_SIZE);
 
-  // Process chunks in parallel groups with controlled concurrency
-  for (let i = 0; i < chunks.length; i += MAX_PARALLEL_INSERTS) {
-    const group = chunks.slice(i, i + MAX_PARALLEL_INSERTS);
-
-    await Promise.all(
-      group.map((chunk, idx) =>
-        withRetry(
-          async () => {
-            await db.insert(logRecords).values(chunk);
+  await pMap(
+    chunks,
+    (chunkData, idx) =>
+      pRetry(
+        () => db.insert(logRecords).values(chunkData),
+        {
+          retries: 3,
+          minTimeout: 1000,
+          onFailedAttempt: (err) => {
+            logger.warn(
+              `Insert batch ${batchIndex} chunk ${idx + 1}/${chunks.length} attempt ${err.attemptNumber} failed`,
+              { error: err?.error?.message, retriesLeft: err?.retriesLeft },
+            );
           },
-          `Insert batch ${batchIndex} chunk ${i + idx + 1}/${chunks.length}`,
-        ),
+        },
       ),
-    );
-  }
+    { concurrency: MAX_PARALLEL_INSERTS },
+  );
 }
 
 function prepareDbRecords(fileId: string, validRecords: ParsedRecord[]) {
@@ -279,7 +286,6 @@ async function processRecords(
   const dbRecords = prepareDbRecords(fileId, validRecords);
 
   try {
-    // Insert with parallel chunking for speed
     await insertRecordsParallel(dbRecords, batchIndex);
 
     await markBatchCompleted(fileId, batchIndex, parseErrors.length);
@@ -309,7 +315,6 @@ function logParseErrors(
   batchIndex: number,
   errors: ParseError[],
 ): void {
-  // Log first few errors for debugging
   const samplesToLog = errors.slice(0, 5);
   for (const error of samplesToLog) {
     logger.warn("Parse error in batch", {
