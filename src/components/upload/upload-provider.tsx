@@ -321,10 +321,6 @@ export function UploadProvider({ children }: UploadProviderProps) {
 
         currentSessionRef.current = null;
         await queryClient.invalidateQueries({ queryKey: fileKeys.list() });
-
-        toast.success("File uploaded", {
-          description: `${file.name} is now being processed`,
-        });
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Upload failed";
@@ -334,9 +330,6 @@ export function UploadProvider({ children }: UploadProviderProps) {
             ...prev,
             status: "error",
           }));
-          toast.error("Upload failed", {
-            description: message,
-          });
         }
       } finally {
         abortControllerRef.current = null;

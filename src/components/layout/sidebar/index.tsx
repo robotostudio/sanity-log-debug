@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { UserMenu } from "@/components/auth/user-menu";
 import { SidebarNav } from "./sidebar-nav";
 import { useSidebar } from "./sidebar-provider";
-import { UploadIndicator } from "./upload-indicator";
 
 export function Sidebar() {
   const { isCollapsed, toggleCollapsed } = useSidebar();
@@ -55,9 +54,6 @@ export function Sidebar() {
 
       {/* Navigation */}
       <SidebarNav />
-
-      {/* Upload indicator */}
-      <UploadIndicator />
 
       {/* Spacer */}
       <div className="flex-1" />

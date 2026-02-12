@@ -29,6 +29,7 @@ import { UploadStats, ChunkProgress, CompactStats } from "./upload-stats";
 import { UploadStatus, StatusIcon, StatusText } from "./upload-status";
 import { UploadTrigger } from "./upload-trigger";
 import { UploadCancelButton } from "./upload-cancel-button";
+import { FloatingUploadCard } from "./upload-float-card";
 
 // Compound component pattern
 export const Upload = {
@@ -44,6 +45,7 @@ export const Upload = {
   StatusText,
   Trigger: UploadTrigger,
   CancelButton: UploadCancelButton,
+  FloatCard: FloatingUploadCard,
 };
 
 // Re-export provider for direct use at app level
@@ -68,3 +70,4 @@ export { UploadStats, ChunkProgress, CompactStats } from "./upload-stats";
 export { UploadStatus as UploadStatusComponent, StatusIcon, StatusText } from "./upload-status";
 export { UploadTrigger } from "./upload-trigger";
 export { UploadCancelButton } from "./upload-cancel-button";
+export { FloatingUploadCard } from "./upload-float-card";
