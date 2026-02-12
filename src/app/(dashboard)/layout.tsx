@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { auth } from "@/lib/auth";
 import { Sidebar, SidebarProvider } from "@/components/layout/sidebar";
 import { UploadProvider } from "@/components/upload";
+import { FloatingUploadCard } from "@/components/upload/upload-float-card";
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +30,7 @@ export default async function DashboardLayout({
                 {children}
               </div>
             </main>
+            <FloatingUploadCard />
           </div>
         </SidebarProvider>
       </UploadProvider>

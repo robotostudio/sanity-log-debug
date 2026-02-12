@@ -139,9 +139,26 @@
   animation: progress-indeterminate 1.5s ease-in-out infinite;
 }
 
+/* Upload float card slide-in */
+@keyframes slide-in-bottom {
+  from {
+    transform: translateY(calc(100% + 16px));
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slide-in-bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .animate-progress-indeterminate {
+  .animate-progress-indeterminate,
+  .animate-slide-in-bottom {
     animation: none;
     transform: translateX(0);
   }
