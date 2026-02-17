@@ -4,11 +4,12 @@ import {
   AlertTriangleIcon,
   CheckCircle2Icon,
   InfoIcon,
-  Loader2Icon,
   XCircleIcon,
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import spinners from "unicode-animations";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
 
 function Toaster({ ...props }: ToasterProps) {
   return (
@@ -20,7 +21,14 @@ function Toaster({ ...props }: ToasterProps) {
         info: <InfoIcon className="size-4 text-sky-400" />,
         warning: <AlertTriangleIcon className="size-4 text-amber-400" />,
         error: <XCircleIcon className="size-4 text-rose-400" />,
-        loading: <Loader2Icon className="size-4 text-zinc-400 animate-spin" />,
+        loading: (
+          <UnicodeSpinner
+            animation={spinners.cascade}
+            size="md"
+            className="text-zinc-400"
+            label="Loading"
+          />
+        ),
       }}
       toastOptions={{
         classNames: {

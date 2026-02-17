@@ -7,16 +7,17 @@ import {
   Clock,
   Database,
   FileText,
-  Loader2,
   XCircle,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import spinners from "unicode-animations";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StateContainer } from "@/components/ui/state-container";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
 import { apiFetcher } from "@/lib/api-client";
 import { PROCESSING_STATUS_BG } from "@/lib/constants";
 import type { File } from "@/lib/db/schema";
@@ -102,10 +103,12 @@ export function PipelineContent() {
       {hasActiveJobs && (
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <div className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-zinc-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-zinc-300" />
-            </div>
+            <UnicodeSpinner
+              animation={spinners.breathe}
+              size="xs"
+              className="text-zinc-400"
+              label="Active"
+            />
             <h2 className="text-sm font-medium text-zinc-400">Active Jobs</h2>
           </div>
           <div className="space-y-2">
@@ -233,7 +236,12 @@ function ActiveJobCard({ job }: ActiveJobCardProps) {
             {isProcessing && `${recordCount.toLocaleString()} records ingested`}
           </span>
           {isProcessing && (
-            <Loader2 className="h-3 w-3 animate-spin text-zinc-400" />
+            <UnicodeSpinner
+              animation={spinners.pulse}
+              size="xs"
+              className="text-zinc-400"
+              label="Processing"
+            />
           )}
         </div>
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-800">
@@ -325,7 +333,11 @@ function EmptyJobsState() {
       title="No processing history"
       description="Upload your first data source to begin ingesting records into the system."
       action={
-        <Button variant="surface" asChild className="rounded-lg px-3 py-2 text-base leading-5">
+        <Button
+          variant="surface"
+          asChild
+          className="rounded-lg px-3 py-2 text-base leading-5"
+        >
           <Link href="/sources">Upload Data Source</Link>
         </Button>
       }

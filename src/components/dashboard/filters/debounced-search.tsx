@@ -1,8 +1,10 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useRef, useState } from "react";
+import spinners from "unicode-animations";
 import { Input } from "@/components/ui/input";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
 
 interface DebouncedSearchProps {
   value: string;
@@ -41,7 +43,12 @@ export function DebouncedSearch({
   return (
     <div className="relative">
       {isFiltering ? (
-        <Loader2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-zinc-400" />
+        <UnicodeSpinner
+          animation={spinners.sparkle}
+          size="sm"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400"
+          label="Searching"
+        />
       ) : (
         <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
       )}

@@ -1,7 +1,8 @@
 "use client";
 
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { use } from "react";
+import spinners from "unicode-animations";
 import {
   DonutChart,
   EndpointDistribution,
@@ -16,6 +17,7 @@ import { SlowestRequests } from "@/components/dashboard/slowest-requests";
 import { TimeSeriesChart } from "@/components/dashboard/time-series-chart";
 import { StateContainer } from "@/components/ui/state-container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
 import { FileKeyProvider } from "@/lib/hooks/use-file-key-context";
 import { SourceDetailHeader } from "./source-detail-header";
 import { useSourceDetail } from "./use-source-detail";
@@ -62,13 +64,25 @@ function LogsTabContent() {
 
 export function SourceDetailPage({ params }: SourceDetailPageProps) {
   const { id } = use(params);
-  const { source, isLoading, error, isDeleting, deleteSource, isRetrying, retrySource } =
-    useSourceDetail(id);
+  const {
+    source,
+    isLoading,
+    error,
+    isDeleting,
+    deleteSource,
+    isRetrying,
+    retrySource,
+  } = useSourceDetail(id);
 
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        <UnicodeSpinner
+          animation={spinners.braille}
+          size="xl"
+          className="text-zinc-500"
+          label="Loading source"
+        />
       </div>
     );
   }
@@ -88,7 +102,8 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
   }
 
   const isReady = source.processingStatus === "ready";
-  const isFailed = source.processingStatus === "failed" || source.processingStatus === "error";
+  const isFailed =
+    source.processingStatus === "failed" || source.processingStatus === "error";
 
   return (
     <div className="flex flex-1 flex-col gap-6">
@@ -126,12 +141,22 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
           icon={<AlertCircle className="h-6 w-6 text-red-400" />}
           iconBg="bg-red-500/10"
           title="Processing failed"
-          description={source.errorMessage ?? "An error occurred during processing. You can retry from the menu above."}
+          description={
+            source.errorMessage ??
+            "An error occurred during processing. You can retry from the menu above."
+          }
         />
       ) : (
         <StateContainer
           variant="card"
-          icon={<Loader2 className="h-6 w-6 animate-spin text-zinc-400" />}
+          icon={
+            <UnicodeSpinner
+              animation={spinners.dna}
+              size="xl"
+              className="text-zinc-400"
+              label="Processing source"
+            />
+          }
           title="Processing source"
           description="Analytics will be available once processing is complete."
         />

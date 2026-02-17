@@ -27,7 +27,7 @@ export function PageHeader({ title, children }: PageHeaderProps) {
         <span className="text-[#fafafa]">{`  /  ${pageName}`}</span>
       </p>
       <div className="mt-8 flex items-center justify-between">
-        <h1 className="text-2xl font-medium leading-9 text-[#fafafa]">
+        <h1 className="font-pixel text-2xl font-medium leading-9 text-[#fafafa]">
           {title}
         </h1>
         {children && <div className="flex items-center gap-2">{children}</div>}

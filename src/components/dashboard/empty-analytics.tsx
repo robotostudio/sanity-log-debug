@@ -89,7 +89,7 @@ export function EmptyAnalytics() {
           </div>
 
           <div className="flex flex-col items-start gap-4 w-full">
-            <h2 className="text-2xl font-semibold leading-9 text-[#fafafa]">
+            <h2 className="font-pixel text-2xl font-semibold leading-9 text-[#fafafa]">
               Select a data source
             </h2>
 

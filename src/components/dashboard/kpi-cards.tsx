@@ -80,12 +80,12 @@ function KpiCard({
   return (
     <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+        <CardTitle className="font-pixel text-xs font-medium uppercase tracking-wider text-zinc-500">
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="font-mono text-2xl font-medium text-zinc-100">
+        <div className="font-pixel text-2xl font-medium text-zinc-100">
           {value}
         </div>
         <div className="mt-1 flex items-center justify-between">

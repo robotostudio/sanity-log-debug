@@ -1,7 +1,12 @@
 "use client";
 
-import { CheckCircle2, Loader2, Upload, XCircle } from "lucide-react";
-import { useUploadState, type UploadStatus as UploadStatusType } from "./upload-context";
+import { CheckCircle2, Upload, XCircle } from "lucide-react";
+import spinners from "unicode-animations";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
+import {
+  type UploadStatus as UploadStatusType,
+  useUploadState,
+} from "./upload-context";
 
 interface StatusIconProps {
   status: UploadStatusType;
@@ -11,9 +16,21 @@ interface StatusIconProps {
 function StatusIcon({ status, className = "h-6 w-6" }: StatusIconProps) {
   switch (status) {
     case "uploading":
-      return <Loader2 className={`${className} text-blue-500 animate-spin`} />;
+      return (
+        <UnicodeSpinner
+          animation={spinners.braillewave}
+          className={`${className} text-blue-500`}
+          label="Uploading"
+        />
+      );
     case "processing":
-      return <Loader2 className={`${className} text-amber-500 animate-spin`} />;
+      return (
+        <UnicodeSpinner
+          animation={spinners.dna}
+          className={`${className} text-amber-500`}
+          label="Processing"
+        />
+      );
     case "complete":
       return <CheckCircle2 className={`${className} text-green-500`} />;
     case "error":

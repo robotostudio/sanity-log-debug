@@ -1,7 +1,14 @@
 "use client";
 
-import { AlertCircle, ChevronRight, Loader2, MoreHorizontal, RefreshCw, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronRight,
+  MoreHorizontal,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
+import spinners from "unicode-animations";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UnicodeSpinner } from "@/components/ui/unicode-spinner";
 import { formatBytes, formatDate } from "@/lib/format";
 import type { SourceDetail } from "./types";
 import { formatSourceName } from "./utils";
@@ -112,7 +120,16 @@ export function SourceDetailHeader({
               disabled={isRetrying}
               className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 px-3 py-1 text-sm text-zinc-400 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-200 disabled:opacity-50"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              {isRetrying ? (
+                <UnicodeSpinner
+                  animation={spinners.orbit}
+                  size="sm"
+                  className="text-zinc-400"
+                  label="Retrying"
+                />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
               {isRetrying ? "Retrying..." : "Retry"}
             </button>
           )}
@@ -127,7 +144,11 @@ export function SourceDetailHeader({
                 className="inline-flex items-center justify-center rounded-lg border border-zinc-800 p-2 text-[#a1a1aa] transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-[#f4f4f5] disabled:opacity-50"
               >
                 {isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <UnicodeSpinner
+                    animation={spinners.scan}
+                    size="md"
+                    label="Deleting"
+                  />
                 ) : (
                   <MoreHorizontal className="h-4 w-4" />
                 )}

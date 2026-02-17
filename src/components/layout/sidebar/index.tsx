@@ -36,7 +36,7 @@ export function Sidebar() {
           <>
             <div className="flex items-center gap-[7.2px]">
               <LogoIcon className="h-5 w-[20.25px] text-[#fafafa]" />
-              <span className="font-medium text-[21.6px] leading-[28.8px] tracking-[-0.54px] text-[#fafafa]">
+              <span className="font-pixel font-medium text-[21.6px] leading-[28.8px] tracking-[-0.54px] text-[#fafafa]">
                 Sanity Logs
               </span>
             </div>

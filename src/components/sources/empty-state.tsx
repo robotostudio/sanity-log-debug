@@ -90,7 +90,7 @@ export function EmptyState() {
           </div>
 
           <div className="flex w-full flex-col items-start gap-4">
-            <h2 className="text-2xl font-semibold leading-9 text-[#fafafa]">
+            <h2 className="font-pixel text-2xl font-semibold leading-9 text-[#fafafa]">
               No data sources yet
             </h2>
 
