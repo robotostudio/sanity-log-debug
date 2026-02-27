@@ -1,4 +1,4 @@
-import { asc, desc } from "drizzle-orm";
+import { asc, desc, sql } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import {
   buildFilterConditions,
@@ -13,6 +13,9 @@ import {
 } from "@/lib/api";
 import { db, logRecords } from "@/lib/db";
 import type { LogRecord as DbLogRecord } from "@/lib/db/schema";
+
+/** Max rows to scan for non-timestamp sorts. Prevents full-table heap fetches on Neon cold storage. */
+const SORT_SCAN_CAP = 5000;
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,18 +45,50 @@ export async function GET(request: NextRequest) {
       query.sortDir === "asc" ? asc(sortColumn) : desc(sortColumn);
 
     const offset = (query.page - 1) * query.pageSize;
+    const fetchLimit = query.pageSize + 1;
 
-    // Fetch pageSize + 1 to detect if more pages exist.
-    // Eliminates the count(*) query which was the bottleneck —
-    // count scans ALL matching rows on Neon's cold storage (~3 min),
-    // while LIMIT N only reads N rows via index (~ms).
-    const records = await db
-      .select()
-      .from(logRecords)
-      .where(whereClause)
-      .orderBy(orderByClause)
-      .limit(query.pageSize + 1)
-      .offset(offset);
+    let records: (typeof logRecords.$inferSelect)[];
+
+    if (query.sortBy === "timestamp") {
+      // Fast path: idx_file_timestamp aligns filter prefix + sort order.
+      // Postgres scans the index in order and stops after LIMIT rows.
+      records = await db
+        .select()
+        .from(logRecords)
+        .where(whereClause)
+        .orderBy(orderByClause)
+        .limit(fetchLimit)
+        .offset(offset);
+    } else {
+      // Non-timestamp sorts: Postgres must heap-fetch ALL matching rows to sort,
+      // which is catastrophic on Neon cold storage (30-45s for 30K rows).
+      // Fix: cap the scan to recent rows via the fast timestamp index, then
+      // re-sort in-memory. Trade-off: sort is within the most recent SORT_SCAN_CAP
+      // matching rows, which is correct for typical log analysis.
+      const filtered = db
+        .select()
+        .from(logRecords)
+        .where(whereClause)
+        .orderBy(desc(logRecords.timestamp))
+        .limit(SORT_SCAN_CAP)
+        .as("filtered");
+
+      const filteredSortCol =
+        {
+          duration: filtered.duration,
+          status: filtered.status,
+          method: filtered.method,
+          endpoint: filtered.endpoint,
+          responseSize: filtered.responseSize,
+        }[query.sortBy] ?? filtered.timestamp;
+
+      records = await db
+        .select()
+        .from(filtered)
+        .orderBy(query.sortDir === "asc" ? asc(filteredSortCol) : desc(filteredSortCol))
+        .limit(fetchLimit)
+        .offset(offset);
+    }
 
     const hasMore = records.length > query.pageSize;
     const page = records.slice(0, query.pageSize);
