@@ -1,4 +1,4 @@
-import { asc, desc, sql } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import {
   buildFilterConditions,
@@ -43,32 +43,27 @@ export async function GET(request: NextRequest) {
 
     const offset = (query.page - 1) * query.pageSize;
 
-    // Run count + data queries in parallel — they share the same WHERE clause
-    // but have zero data dependency. Cuts route latency ~50%.
-    const [countResult, records] = await Promise.all([
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(logRecords)
-        .where(whereClause)
-        .then((rows) => rows[0]),
-      db
-        .select()
-        .from(logRecords)
-        .where(whereClause)
-        .orderBy(orderByClause)
-        .limit(query.pageSize)
-        .offset(offset),
-    ]);
+    // Fetch pageSize + 1 to detect if more pages exist.
+    // Eliminates the count(*) query which was the bottleneck —
+    // count scans ALL matching rows on Neon's cold storage (~3 min),
+    // while LIMIT N only reads N rows via index (~ms).
+    const records = await db
+      .select()
+      .from(logRecords)
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(query.pageSize + 1)
+      .offset(offset);
 
-    const total = countResult?.count ?? 0;
-    const data = records.map(transformToApiFormat);
+    const hasMore = records.length > query.pageSize;
+    const page = records.slice(0, query.pageSize);
+    const data = page.map(transformToApiFormat);
 
     return success({
       data,
-      total,
       page: query.page,
       pageSize: query.pageSize,
-      totalPages: Math.ceil(total / query.pageSize),
+      hasMore,
     });
   } catch (error) {
     return handleError(error, "Failed to fetch logs");

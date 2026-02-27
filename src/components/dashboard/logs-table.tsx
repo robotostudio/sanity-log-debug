@@ -28,10 +28,9 @@ import { SeverityBadge, StatusBadge } from "./status-badge";
 
 interface LogsResponse {
   data: LogRecord[];
-  total: number;
   page: number;
   pageSize: number;
-  totalPages: number;
+  hasMore: boolean;
 }
 
 const SORT_COLUMNS = [
@@ -44,26 +43,13 @@ const SORT_COLUMNS = [
 ] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-function CardWrapper({
-  children,
-  total,
-}: {
-  children: React.ReactNode;
-  total?: number;
-}) {
+function CardWrapper({ children }: { children: React.ReactNode }) {
   return (
     <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-zinc-400">
-            Log Entries
-            {total !== undefined ? (
-              <span className="ml-2 font-mono text-zinc-500">
-                ({total.toLocaleString()} total)
-              </span>
-            ) : null}
-          </CardTitle>
-        </div>
+        <CardTitle className="text-sm font-medium text-zinc-400">
+          Log Entries
+        </CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -167,7 +153,7 @@ function LogsTableData({ selectedFile, queryString, isActive }: LogsTableDataPro
   }
 
   return (
-    <CardWrapper total={data?.total}>
+    <CardWrapper>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -227,11 +213,9 @@ function LogsTableData({ selectedFile, queryString, isActive }: LogsTableDataPro
         </Table>
       </div>
 
-      {data && data.totalPages > 1 ? (
+      {(page > 1 || data?.hasMore) ? (
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-zinc-500">
-            Page {data.page} of {data.totalPages}
-          </span>
+          <span className="text-xs text-zinc-500">Page {page}</span>
           <div className="flex gap-1">
             <Button
               variant="outline"
@@ -246,7 +230,7 @@ function LogsTableData({ selectedFile, queryString, isActive }: LogsTableDataPro
               variant="outline"
               size="sm"
               className="h-7 border-zinc-700 text-xs"
-              disabled={page >= data.totalPages}
+              disabled={!data?.hasMore}
               onClick={() => setPage((p) => p + 1)}
             >
               Next
