@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/table";
 import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
-import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
+import { useFileKeyContext } from "@/lib/hooks/use-file-key-context";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { useSelectedFile } from "@/lib/hooks/use-selected-file";
 import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
 import { LogDetailSheet } from "./log-detail-sheet";
@@ -97,15 +98,16 @@ function LogsTableLoading() {
 }
 
 interface LogsTableDataProps {
+  selectedFile: string;
   queryString: string;
+  isActive: boolean;
 }
 
 /**
  * Logs table data component. Uses key prop pattern to reset pagination
  * when filters change - parent passes key={queryString} to trigger reset.
  */
-function LogsTableData({ queryString }: LogsTableDataProps) {
-  const state = useDashboardData();
+function LogsTableData({ selectedFile, queryString, isActive }: LogsTableDataProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortColumn>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -116,14 +118,15 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
   params.set("pageSize", "50");
   params.set("sortBy", sortBy);
   params.set("sortDir", sortDir);
-  if (state.selectedFile) params.set("fileKey", state.selectedFile);
+  params.set("fileKey", selectedFile);
 
   const paramsObj = Object.fromEntries(params.entries());
 
   const { data, isPending } = useQuery({
     queryKey: logKeys.list(paramsObj),
-    queryFn: () => apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`),
-    enabled: !!state.selectedFile,
+    queryFn: ({ signal }) =>
+      apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`, signal),
+    enabled: isActive,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
@@ -261,14 +264,23 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
   );
 }
 
-export function LogsTable() {
-  const state = useDashboardData();
+export function LogsTable({ isActive = true }: { isActive?: boolean }) {
+  const contextFileKey = useFileKeyContext();
+  const { selectedFile: urlFile } = useSelectedFile();
   const { queryString } = useFilters();
 
-  if (state.status === "empty") {
+  const selectedFile = contextFileKey ?? urlFile;
+
+  if (!selectedFile) {
     return <LogsTableEmpty />;
   }
 
-  // Key prop resets component state (including page) when filters change
-  return <LogsTableData key={queryString} queryString={queryString} />;
+  return (
+    <LogsTableData
+      key={queryString}
+      selectedFile={selectedFile}
+      queryString={queryString}
+      isActive={isActive}
+    />
+  );
 }

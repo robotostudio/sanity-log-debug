@@ -10,10 +10,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useIsFetching } from "@tanstack/react-query";
 import { FILTER_OPTIONS } from "@/lib/config";
 import { formatDateForUrl, parseDateStringToDate } from "@/lib/date-utils";
-import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { logKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { DatePresets } from "./filters/date-presets";
 import { DebouncedSearch } from "./filters/debounced-search";
@@ -22,7 +23,7 @@ import { MultiSelectFilter } from "./filters/multi-select-filter";
 import { StudioToggle } from "./filters/studio-toggle";
 
 export function FilterBar() {
-  const state = useDashboardData();
+  const fetchingCount = useIsFetching({ queryKey: logKeys.all });
   const {
     filters,
     setFilters,
@@ -31,7 +32,7 @@ export function FilterBar() {
     activePreset,
     applyDatePreset,
   } = useFilters();
-  const isFiltering = state.isFiltering;
+  const isFiltering = fetchingCount > 0;
 
   const dateRange: DateRange | undefined =
     filters.dateFrom || filters.dateTo

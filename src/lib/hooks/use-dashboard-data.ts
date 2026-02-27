@@ -25,7 +25,10 @@ export interface DashboardData {
  *
  * @param fileKey - Optional file key override (for source detail pages)
  */
-export function useDashboardData(fileKey?: string): DashboardData {
+export function useDashboardData(
+  fileKey?: string,
+  isActive = true,
+): DashboardData {
   const { queryString } = useFilters();
   const { selectedFile: urlFile } = useSelectedFile();
   const contextFileKey = useFileKeyContext();
@@ -47,8 +50,8 @@ export function useDashboardData(fileKey?: string): DashboardData {
 
   const { data, isPending, isFetching, error } = useQuery({
     queryKey: logKeys.aggregation(selectedFile ?? "", queryString),
-    queryFn: () => apiFetcher<Aggregations>(aggUrl as string),
-    enabled: shouldFetch && aggUrl !== null,
+    queryFn: ({ signal }) => apiFetcher<Aggregations>(aggUrl as string, signal),
+    enabled: shouldFetch && aggUrl !== null && isActive,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });

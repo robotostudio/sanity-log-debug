@@ -76,6 +76,10 @@ export const logRecords = pgTable(
     index("idx_file_severity").on(table.fileId, table.severityText),
     index("idx_file_status").on(table.fileId, table.status),
     index("idx_file_endpoint").on(table.fileId, table.endpoint),
+    index("idx_file_method").on(table.fileId, table.method),
+    index("idx_file_domain").on(table.fileId, table.domain),
+    index("idx_file_duration").on(table.fileId, table.duration),
+    index("idx_file_groq_query_id").on(table.fileId, table.groqQueryId),
   ],
 );
 
