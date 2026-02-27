@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/table";
 import { apiFetcher } from "@/lib/api-client";
 import { formatBytes, formatDuration } from "@/lib/constants";
-import { useDashboardData } from "@/lib/hooks/use-dashboard-data";
+import { useFileKeyContext } from "@/lib/hooks/use-file-key-context";
 import { useFilters } from "@/lib/hooks/use-filters";
+import { useSelectedFile } from "@/lib/hooks/use-selected-file";
 import { logKeys } from "@/lib/query-keys";
 import type { LogRecord } from "@/lib/types";
 import { LogDetailSheet } from "./log-detail-sheet";
@@ -27,10 +28,9 @@ import { SeverityBadge, StatusBadge } from "./status-badge";
 
 interface LogsResponse {
   data: LogRecord[];
-  total: number;
   page: number;
   pageSize: number;
-  totalPages: number;
+  hasMore: boolean;
 }
 
 const SORT_COLUMNS = [
@@ -43,26 +43,13 @@ const SORT_COLUMNS = [
 ] as const;
 type SortColumn = (typeof SORT_COLUMNS)[number];
 
-function CardWrapper({
-  children,
-  total,
-}: {
-  children: React.ReactNode;
-  total?: number;
-}) {
+function CardWrapper({ children }: { children: React.ReactNode }) {
   return (
     <Card className="border-zinc-800 bg-transparent">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-zinc-400">
-            Log Entries
-            {total !== undefined ? (
-              <span className="ml-2 font-mono text-zinc-500">
-                ({total.toLocaleString()} total)
-              </span>
-            ) : null}
-          </CardTitle>
-        </div>
+        <CardTitle className="text-sm font-medium text-zinc-400">
+          Log Entries
+        </CardTitle>
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
@@ -97,15 +84,16 @@ function LogsTableLoading() {
 }
 
 interface LogsTableDataProps {
+  selectedFile: string;
   queryString: string;
+  isActive: boolean;
 }
 
 /**
  * Logs table data component. Uses key prop pattern to reset pagination
  * when filters change - parent passes key={queryString} to trigger reset.
  */
-function LogsTableData({ queryString }: LogsTableDataProps) {
-  const state = useDashboardData();
+function LogsTableData({ selectedFile, queryString, isActive }: LogsTableDataProps) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SortColumn>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -116,14 +104,15 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
   params.set("pageSize", "50");
   params.set("sortBy", sortBy);
   params.set("sortDir", sortDir);
-  if (state.selectedFile) params.set("fileKey", state.selectedFile);
+  params.set("fileKey", selectedFile);
 
   const paramsObj = Object.fromEntries(params.entries());
 
   const { data, isPending } = useQuery({
     queryKey: logKeys.list(paramsObj),
-    queryFn: () => apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`),
-    enabled: !!state.selectedFile,
+    queryFn: ({ signal }) =>
+      apiFetcher<LogsResponse>(`/api/logs?${params.toString()}`, signal),
+    enabled: isActive,
     placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   });
@@ -164,7 +153,7 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
   }
 
   return (
-    <CardWrapper total={data?.total}>
+    <CardWrapper>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -224,11 +213,9 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
         </Table>
       </div>
 
-      {data && data.totalPages > 1 ? (
+      {(page > 1 || data?.hasMore) ? (
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-zinc-500">
-            Page {data.page} of {data.totalPages}
-          </span>
+          <span className="text-xs text-zinc-500">Page {page}</span>
           <div className="flex gap-1">
             <Button
               variant="outline"
@@ -243,7 +230,7 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
               variant="outline"
               size="sm"
               className="h-7 border-zinc-700 text-xs"
-              disabled={page >= data.totalPages}
+              disabled={!data?.hasMore}
               onClick={() => setPage((p) => p + 1)}
             >
               Next
@@ -261,14 +248,23 @@ function LogsTableData({ queryString }: LogsTableDataProps) {
   );
 }
 
-export function LogsTable() {
-  const state = useDashboardData();
+export function LogsTable({ isActive = true }: { isActive?: boolean }) {
+  const contextFileKey = useFileKeyContext();
+  const { selectedFile: urlFile } = useSelectedFile();
   const { queryString } = useFilters();
 
-  if (state.status === "empty") {
+  const selectedFile = contextFileKey ?? urlFile;
+
+  if (!selectedFile) {
     return <LogsTableEmpty />;
   }
 
-  // Key prop resets component state (including page) when filters change
-  return <LogsTableData key={queryString} queryString={queryString} />;
+  return (
+    <LogsTableData
+      key={queryString}
+      selectedFile={selectedFile}
+      queryString={queryString}
+      isActive={isActive}
+    />
+  );
 }

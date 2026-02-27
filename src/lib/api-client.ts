@@ -33,8 +33,11 @@ export function unwrapResponse<T>(
  * Fetcher for TanStack Query that handles the API response format.
  * Throws ApiClientError on API errors.
  */
-export async function apiFetcher<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+export async function apiFetcher<T>(
+  url: string,
+  signal?: AbortSignal,
+): Promise<T> {
+  const res = await fetch(url, { signal });
 
   if (!res.ok) {
     // Try to parse error response

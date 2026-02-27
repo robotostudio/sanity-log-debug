@@ -14,6 +14,9 @@ import {
 import { db, logRecords } from "@/lib/db";
 import type { LogRecord as DbLogRecord } from "@/lib/db/schema";
 
+/** Max rows to scan for non-timestamp sorts. Prevents full-table heap fetches on Neon cold storage. */
+const SORT_SCAN_CAP = 5000;
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth();
@@ -28,13 +31,6 @@ export async function GET(request: NextRequest) {
 
     const whereClause = buildFilterConditions(fileId, query);
 
-    const [countResult] = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(logRecords)
-      .where(whereClause);
-
-    const total = countResult?.count ?? 0;
-
     const sortColumn =
       {
         timestamp: logRecords.timestamp,
@@ -42,28 +38,67 @@ export async function GET(request: NextRequest) {
         status: logRecords.status,
         method: logRecords.method,
         endpoint: logRecords.endpoint,
+        responseSize: logRecords.responseSize,
       }[query.sortBy] ?? logRecords.timestamp;
 
     const orderByClause =
       query.sortDir === "asc" ? asc(sortColumn) : desc(sortColumn);
 
     const offset = (query.page - 1) * query.pageSize;
-    const records = await db
-      .select()
-      .from(logRecords)
-      .where(whereClause)
-      .orderBy(orderByClause)
-      .limit(query.pageSize)
-      .offset(offset);
+    const fetchLimit = query.pageSize + 1;
 
-    const data = records.map(transformToApiFormat);
+    let records: (typeof logRecords.$inferSelect)[];
+
+    if (query.sortBy === "timestamp") {
+      // Fast path: idx_file_timestamp aligns filter prefix + sort order.
+      // Postgres scans the index in order and stops after LIMIT rows.
+      records = await db
+        .select()
+        .from(logRecords)
+        .where(whereClause)
+        .orderBy(orderByClause)
+        .limit(fetchLimit)
+        .offset(offset);
+    } else {
+      // Non-timestamp sorts: Postgres must heap-fetch ALL matching rows to sort,
+      // which is catastrophic on Neon cold storage (30-45s for 30K rows).
+      // Fix: cap the scan to recent rows via the fast timestamp index, then
+      // re-sort in-memory. Trade-off: sort is within the most recent SORT_SCAN_CAP
+      // matching rows, which is correct for typical log analysis.
+      const filtered = db
+        .select()
+        .from(logRecords)
+        .where(whereClause)
+        .orderBy(desc(logRecords.timestamp))
+        .limit(SORT_SCAN_CAP)
+        .as("filtered");
+
+      const filteredSortCol =
+        {
+          duration: filtered.duration,
+          status: filtered.status,
+          method: filtered.method,
+          endpoint: filtered.endpoint,
+          responseSize: filtered.responseSize,
+        }[query.sortBy] ?? filtered.timestamp;
+
+      records = await db
+        .select()
+        .from(filtered)
+        .orderBy(query.sortDir === "asc" ? asc(filteredSortCol) : desc(filteredSortCol))
+        .limit(fetchLimit)
+        .offset(offset);
+    }
+
+    const hasMore = records.length > query.pageSize;
+    const page = records.slice(0, query.pageSize);
+    const data = page.map(transformToApiFormat);
 
     return success({
       data,
-      total,
       page: query.page,
       pageSize: query.pageSize,
-      totalPages: Math.ceil(total / query.pageSize),
+      hasMore,
     });
   } catch (error) {
     return handleError(error, "Failed to fetch logs");

@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, Loader2 } from "lucide-react";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { use } from "react";
 import {
   DonutChart,
@@ -50,20 +51,26 @@ function AnalyticsTabContent() {
   );
 }
 
-function LogsTabContent() {
+function LogsTabContent({ isActive }: { isActive: boolean }) {
   return (
     <div className="space-y-4">
       <FilterBar />
       <div className="pt-2" />
-      <LogsTable />
+      <LogsTable isActive={isActive} />
     </div>
   );
 }
+
+const tabOptions = ["analytics", "logs"] as const;
 
 export function SourceDetailPage({ params }: SourceDetailPageProps) {
   const { id } = use(params);
   const { source, isLoading, error, isDeleting, deleteSource, isRetrying, retrySource } =
     useSourceDetail(id);
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(tabOptions).withDefault("analytics"),
+  );
 
   if (isLoading) {
     return (
@@ -102,7 +109,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
 
       {isReady ? (
         <FileKeyProvider fileKey={source.key}>
-          <Tabs defaultValue="analytics">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
             <TabsList
               variant="line"
               className="-mx-6 w-[calc(100%+46px)] border-b border-zinc-800 pl-4 pr-6 pb-0"
@@ -116,7 +123,7 @@ export function SourceDetailPage({ params }: SourceDetailPageProps) {
             </TabsContent>
 
             <TabsContent value="logs" className="pt-6">
-              <LogsTabContent />
+              <LogsTabContent isActive={activeTab === "logs"} />
             </TabsContent>
           </Tabs>
         </FileKeyProvider>
