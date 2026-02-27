@@ -177,14 +177,58 @@ async function getSqlAggregations(
     };
   }
 
-  const percentilesResult = await db
-    .select({
-      p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-      p95: sql<number>`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-      p99: sql<number>`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-    })
-    .from(logRecords)
-    .where(whereClause);
+  // Percentiles + latency buckets have no mutual dependency — run in parallel
+  const [percentilesResult, latencyBucketsResult] = await Promise.all([
+    db
+      .select({
+        p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+        p95: sql<number>`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+        p99: sql<number>`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
+      })
+      .from(logRecords)
+      .where(whereClause),
+    db
+      .select({
+        bucket: sql<string>`CASE
+          WHEN ${logRecords.duration} < 100 THEN '< 100ms'
+          WHEN ${logRecords.duration} < 500 THEN '100-500ms'
+          WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
+          WHEN ${logRecords.duration} < 2000 THEN '1-2s'
+          WHEN ${logRecords.duration} < 5000 THEN '2-5s'
+          ELSE '> 5s'
+        END`,
+        sortOrder: sql<number>`CASE
+          WHEN ${logRecords.duration} < 100 THEN 1
+          WHEN ${logRecords.duration} < 500 THEN 2
+          WHEN ${logRecords.duration} < 1000 THEN 3
+          WHEN ${logRecords.duration} < 2000 THEN 4
+          WHEN ${logRecords.duration} < 5000 THEN 5
+          ELSE 6
+        END`,
+        count: count(),
+      })
+      .from(logRecords)
+      .where(whereClause)
+      .groupBy(
+        sql`CASE
+          WHEN ${logRecords.duration} < 100 THEN '< 100ms'
+          WHEN ${logRecords.duration} < 500 THEN '100-500ms'
+          WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
+          WHEN ${logRecords.duration} < 2000 THEN '1-2s'
+          WHEN ${logRecords.duration} < 5000 THEN '2-5s'
+          ELSE '> 5s'
+        END`,
+        sql`CASE
+          WHEN ${logRecords.duration} < 100 THEN 1
+          WHEN ${logRecords.duration} < 500 THEN 2
+          WHEN ${logRecords.duration} < 1000 THEN 3
+          WHEN ${logRecords.duration} < 2000 THEN 4
+          WHEN ${logRecords.duration} < 5000 THEN 5
+          ELSE 6
+        END`,
+      )
+      .orderBy(sql`2`),
+  ]);
 
   const percentiles = percentilesResult[0];
 
@@ -269,48 +313,6 @@ async function getSqlAggregations(
     name: row.method || "(empty)",
     count: Number(row.count),
   }));
-
-  const latencyBucketsResult = await db
-    .select({
-      bucket: sql<string>`CASE
-        WHEN ${logRecords.duration} < 100 THEN '< 100ms'
-        WHEN ${logRecords.duration} < 500 THEN '100-500ms'
-        WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
-        WHEN ${logRecords.duration} < 2000 THEN '1-2s'
-        WHEN ${logRecords.duration} < 5000 THEN '2-5s'
-        ELSE '> 5s'
-      END`,
-      sortOrder: sql<number>`CASE
-        WHEN ${logRecords.duration} < 100 THEN 1
-        WHEN ${logRecords.duration} < 500 THEN 2
-        WHEN ${logRecords.duration} < 1000 THEN 3
-        WHEN ${logRecords.duration} < 2000 THEN 4
-        WHEN ${logRecords.duration} < 5000 THEN 5
-        ELSE 6
-      END`,
-      count: count(),
-    })
-    .from(logRecords)
-    .where(whereClause)
-    .groupBy(
-      sql`CASE
-        WHEN ${logRecords.duration} < 100 THEN '< 100ms'
-        WHEN ${logRecords.duration} < 500 THEN '100-500ms'
-        WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
-        WHEN ${logRecords.duration} < 2000 THEN '1-2s'
-        WHEN ${logRecords.duration} < 5000 THEN '2-5s'
-        ELSE '> 5s'
-      END`,
-      sql`CASE
-        WHEN ${logRecords.duration} < 100 THEN 1
-        WHEN ${logRecords.duration} < 500 THEN 2
-        WHEN ${logRecords.duration} < 1000 THEN 3
-        WHEN ${logRecords.duration} < 2000 THEN 4
-        WHEN ${logRecords.duration} < 5000 THEN 5
-        ELSE 6
-      END`,
-    )
-    .orderBy(sql`2`);
 
   const latencyBuckets: DistributionItem[] = LATENCY_BUCKETS.map((b) => ({
     name: b.label,
