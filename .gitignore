@@ -26,6 +26,9 @@
 *.ndjson
 test.csv
 
+# perf test results
+scripts/perf-results/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

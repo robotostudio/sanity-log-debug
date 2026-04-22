@@ -1,4 +1,4 @@
-import { and, avg, count, sql } from "drizzle-orm";
+import { avg, count, desc, sql } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import {
   aggregationsQuerySchema,
@@ -43,7 +43,17 @@ async function getSqlAggregations(
   fileId: string,
   filters: ValidatedFilters,
 ): Promise<Aggregations> {
+  const AGG_SCAN_CAP = 10_000;
   const whereClause = buildFilterConditions(fileId, filters);
+
+  // Cap to most recent N rows — all aggregations run against this subset
+  const capped = db
+    .select()
+    .from(logRecords)
+    .where(whereClause)
+    .orderBy(desc(logRecords.timestamp))
+    .limit(AGG_SCAN_CAP)
+    .as("capped");
 
   const [
     kpisResult,
@@ -54,101 +64,145 @@ async function getSqlAggregations(
     methodResult,
     slowRequestsResult,
     queryExplorerResult,
+    percentilesResult,
+    latencyBucketsResult,
   ] = await Promise.all([
     db
       .select({
         total: count(),
-        avgDuration: avg(logRecords.duration),
-        errorCount: sql<number>`SUM(CASE WHEN ${logRecords.status} >= 400 OR ${logRecords.status} = 0 THEN 1 ELSE 0 END)`,
-        minTimestamp: sql<Date>`MIN(${logRecords.timestamp})`,
-        maxTimestamp: sql<Date>`MAX(${logRecords.timestamp})`,
+        avgDuration: avg(capped.duration),
+        errorCount: sql<number>`SUM(CASE WHEN ${capped.status} >= 400 OR ${capped.status} = 0 THEN 1 ELSE 0 END)`,
+        minTimestamp: sql<Date>`MIN(${capped.timestamp})`,
+        maxTimestamp: sql<Date>`MAX(${capped.timestamp})`,
       })
-      .from(logRecords)
-      .where(whereClause),
+      .from(capped),
 
     db
       .select({
-        hour: sql<string>`date_trunc('hour', ${logRecords.timestamp})::text`,
-        severity: logRecords.severityText,
+        hour: sql<string>`date_trunc('hour', ${capped.timestamp})::text`,
+        severity: capped.severityText,
         count: count(),
-        avgDuration: avg(logRecords.duration),
+        avgDuration: avg(capped.duration),
       })
-      .from(logRecords)
-      .where(whereClause)
+      .from(capped)
       .groupBy(
-        sql`date_trunc('hour', ${logRecords.timestamp})`,
-        logRecords.severityText,
+        sql`date_trunc('hour', ${capped.timestamp})`,
+        capped.severityText,
       )
-      .orderBy(sql`date_trunc('hour', ${logRecords.timestamp})`),
+      .orderBy(sql`date_trunc('hour', ${capped.timestamp})`),
 
     db
       .select({
-        status: logRecords.status,
+        status: capped.status,
         count: count(),
       })
-      .from(logRecords)
-      .where(whereClause)
-      .groupBy(logRecords.status),
+      .from(capped)
+      .groupBy(capped.status),
 
     db
       .select({
-        endpoint: logRecords.endpoint,
+        endpoint: capped.endpoint,
         count: count(),
-        avgDuration: avg(logRecords.duration),
+        avgDuration: avg(capped.duration),
       })
-      .from(logRecords)
-      .where(whereClause)
-      .groupBy(logRecords.endpoint)
+      .from(capped)
+      .groupBy(capped.endpoint)
       .orderBy(sql`count(*) DESC`)
       .limit(15),
 
     db
       .select({
-        domain: logRecords.domain,
+        domain: capped.domain,
         count: count(),
       })
-      .from(logRecords)
-      .where(whereClause)
-      .groupBy(logRecords.domain)
+      .from(capped)
+      .groupBy(capped.domain)
       .orderBy(sql`count(*) DESC`),
 
     db
       .select({
-        method: logRecords.method,
+        method: capped.method,
         count: count(),
       })
-      .from(logRecords)
-      .where(whereClause)
-      .groupBy(logRecords.method)
+      .from(capped)
+      .groupBy(capped.method)
       .orderBy(sql`count(*) DESC`),
 
     db
       .select({
-        traceId: logRecords.traceId,
-        url: logRecords.url,
-        duration: logRecords.duration,
-        method: logRecords.method,
-        status: logRecords.status,
-        endpoint: logRecords.endpoint,
-        timestamp: logRecords.timestamp,
+        traceId: capped.traceId,
+        url: capped.url,
+        duration: capped.duration,
+        method: capped.method,
+        status: capped.status,
+        endpoint: capped.endpoint,
+        timestamp: capped.timestamp,
       })
-      .from(logRecords)
-      .where(whereClause)
-      .orderBy(sql`${logRecords.duration} DESC`)
+      .from(capped)
+      .orderBy(sql`${capped.duration} DESC`)
       .limit(20),
 
     db
       .select({
-        groqId: logRecords.groqQueryId,
+        groqId: capped.groqQueryId,
         count: count(),
-        avgDuration: avg(logRecords.duration),
-        endpoint: sql<string>`MAX(${logRecords.endpoint})`,
+        avgDuration: avg(capped.duration),
+        endpoint: sql<string>`MAX(${capped.endpoint})`,
       })
-      .from(logRecords)
-      .where(and(whereClause, sql`${logRecords.groqQueryId} IS NOT NULL`))
-      .groupBy(logRecords.groqQueryId)
+      .from(capped)
+      .where(sql`${capped.groqQueryId} IS NOT NULL`)
+      .groupBy(capped.groqQueryId)
       .orderBy(sql`count(*) DESC`)
       .limit(100),
+
+    db
+      .select({
+        p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${capped.duration})`,
+        p95: sql<number>`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ${capped.duration})`,
+        p99: sql<number>`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${capped.duration})`,
+      })
+      .from(capped),
+
+    db
+      .select({
+        bucket: sql<string>`CASE
+          WHEN ${capped.duration} < 100 THEN '< 100ms'
+          WHEN ${capped.duration} < 500 THEN '100-500ms'
+          WHEN ${capped.duration} < 1000 THEN '500ms-1s'
+          WHEN ${capped.duration} < 2000 THEN '1-2s'
+          WHEN ${capped.duration} < 5000 THEN '2-5s'
+          ELSE '> 5s'
+        END`,
+        sortOrder: sql<number>`CASE
+          WHEN ${capped.duration} < 100 THEN 1
+          WHEN ${capped.duration} < 500 THEN 2
+          WHEN ${capped.duration} < 1000 THEN 3
+          WHEN ${capped.duration} < 2000 THEN 4
+          WHEN ${capped.duration} < 5000 THEN 5
+          ELSE 6
+        END`,
+        count: count(),
+      })
+      .from(capped)
+      .groupBy(
+        sql`CASE
+          WHEN ${capped.duration} < 100 THEN '< 100ms'
+          WHEN ${capped.duration} < 500 THEN '100-500ms'
+          WHEN ${capped.duration} < 1000 THEN '500ms-1s'
+          WHEN ${capped.duration} < 2000 THEN '1-2s'
+          WHEN ${capped.duration} < 5000 THEN '2-5s'
+          ELSE '> 5s'
+        END`,
+        sql`CASE
+          WHEN ${capped.duration} < 100 THEN 1
+          WHEN ${capped.duration} < 500 THEN 2
+          WHEN ${capped.duration} < 1000 THEN 3
+          WHEN ${capped.duration} < 2000 THEN 4
+          WHEN ${capped.duration} < 5000 THEN 5
+          ELSE 6
+        END`,
+      )
+      .orderBy(sql`2`),
   ]);
 
   const kpiRow = kpisResult[0];
@@ -176,59 +230,6 @@ async function getSqlAggregations(
       totalFiltered: 0,
     };
   }
-
-  // Percentiles + latency buckets have no mutual dependency — run in parallel
-  const [percentilesResult, latencyBucketsResult] = await Promise.all([
-    db
-      .select({
-        p50: sql<number>`PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-        p95: sql<number>`PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-        p99: sql<number>`PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY ${logRecords.duration})`,
-      })
-      .from(logRecords)
-      .where(whereClause),
-    db
-      .select({
-        bucket: sql<string>`CASE
-          WHEN ${logRecords.duration} < 100 THEN '< 100ms'
-          WHEN ${logRecords.duration} < 500 THEN '100-500ms'
-          WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
-          WHEN ${logRecords.duration} < 2000 THEN '1-2s'
-          WHEN ${logRecords.duration} < 5000 THEN '2-5s'
-          ELSE '> 5s'
-        END`,
-        sortOrder: sql<number>`CASE
-          WHEN ${logRecords.duration} < 100 THEN 1
-          WHEN ${logRecords.duration} < 500 THEN 2
-          WHEN ${logRecords.duration} < 1000 THEN 3
-          WHEN ${logRecords.duration} < 2000 THEN 4
-          WHEN ${logRecords.duration} < 5000 THEN 5
-          ELSE 6
-        END`,
-        count: count(),
-      })
-      .from(logRecords)
-      .where(whereClause)
-      .groupBy(
-        sql`CASE
-          WHEN ${logRecords.duration} < 100 THEN '< 100ms'
-          WHEN ${logRecords.duration} < 500 THEN '100-500ms'
-          WHEN ${logRecords.duration} < 1000 THEN '500ms-1s'
-          WHEN ${logRecords.duration} < 2000 THEN '1-2s'
-          WHEN ${logRecords.duration} < 5000 THEN '2-5s'
-          ELSE '> 5s'
-        END`,
-        sql`CASE
-          WHEN ${logRecords.duration} < 100 THEN 1
-          WHEN ${logRecords.duration} < 500 THEN 2
-          WHEN ${logRecords.duration} < 1000 THEN 3
-          WHEN ${logRecords.duration} < 2000 THEN 4
-          WHEN ${logRecords.duration} < 5000 THEN 5
-          ELSE 6
-        END`,
-      )
-      .orderBy(sql`2`),
-  ]);
 
   const percentiles = percentilesResult[0];
 
